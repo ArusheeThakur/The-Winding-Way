@@ -57,6 +57,22 @@
       font: 13px ui-monospace, Menlo, monospace; color: var(--night); background: var(--cream);
       padding: 2px 7px; border-radius: 6px; margin-right: 6px;
     }
+    #hint {
+      position: fixed; left: 50%; top: 22px; transform: translateX(-50%); max-width: 80vw; text-align: center;
+      padding: 9px 22px; border-radius: 999px; font-size: 17px; font-style: italic; pointer-events: none;
+      background: rgba(36, 21, 47, 0.78); border: 1px solid rgba(232, 181, 99, 0.3);
+      opacity: 0; transition: opacity 0.6s ease;
+    }
+    #hint.on { opacity: 1; }
+    #endcard {
+      position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+      background: radial-gradient(ellipse at center, rgba(74, 45, 107, 0.86), rgba(36, 21, 47, 0.97));
+      opacity: 0; pointer-events: none; transition: opacity 1.2s ease;
+    }
+    #endcard.on { opacity: 1; }
+    #endcard h2 { margin: 0; font-size: 50px; font-weight: 500; color: var(--gold); }
+    #endcard p { margin: 0; font-size: 20px; font-style: italic; }
+    #endcard small { margin-top: 26px; font-size: 14px; opacity: 0.65; }
     #partner-label {
       position: fixed; left: 0; top: 0; pointer-events: none;
       box-shadow: 0 2px 6px rgba(36, 21, 47, 0.35);
@@ -87,9 +103,16 @@
     <span><kbd>WASD</kbd>or arrows to move</span>
     <span><kbd>Space</kbd>call</span>
     <span><kbd>H</kbd>hold / follow</span>
+    <span><kbd>R</kbd>start again</span>
     <span><kbd>M</kbd>mute</span>
   </div>
   <div id="partner-label" class="hidden"></div>
+  <div id="hint"></div>
+  <div id="endcard">
+    <h2>To be continued</h2>
+    <p>The door opens. The dark room comes next.</p>
+    <small>Press R to play this room again.</small>
+  </div>
 
   <script type="module" src="src/main.js"></script>
 </body>

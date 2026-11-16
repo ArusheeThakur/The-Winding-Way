@@ -6,14 +6,9 @@ import { createUI } from './ui.js';
 import { SceneManager } from './scenes.js';
 import { Character } from './character.js';
 import { Partner, MODE } from './partner.js';
-import { Thread } from './thread.js';
-import { cellDistance } from './grid.js';
 import { create as createThreadRoom } from './floors/threadRoom.js';
 import { createDebug } from './debug.js';
 import { createAudio } from './audio.js';
-
-// How many cells apart the thread lets the two parents get (stand-in until Stage 3).
-const THREAD_CELLS = 10;
 
 const stage = createStage(document.getElementById('game'));
 const input = createInput();
@@ -22,12 +17,21 @@ const audio = createAudio();
 const scenes = new SceneManager(stage);
 scenes.register('thread', createThreadRoom);
 
-const game = { audio, art: null, stage, scenes, player: null, partner: null, thread: null, floor: null };
+const game = { audio, ui, art: null, stage, scenes, player: null, partner: null, floor: null, frozen: false };
 window.__game = game; // handy for testing in the console
 
 async function enterFloor(name) {
   game.floor = await scenes.load(name, { art: game.art });
+  resetRoom();
+}
+
+// Start the room, or start it again: parents back on their spawns, the room's puzzle reset.
+function resetRoom() {
+  if (!game.player) return;
   placeParents();
+  game.frozen = false;
+  ui.hideEndCard();
+  game.floor.begin?.(game);
 }
 
 // Put both parents on their spawn cells (or the nearest walkable ones).
@@ -49,10 +53,13 @@ function start(art, choice) {
   const other = choice === 'man' ? 'woman' : 'man';
   const height = game.floor.layout.characterHeight;
   game.player = new Character(choice, art[choice], height);
-  game.partner = new Partner(new Character(other, art[other], height), game.player);
-  game.thread = new Thread();
-  stage.scene.add(game.player.group, game.partner.char.group, game.thread.mesh);
-  placeParents();
+  // The room has a say in where the partner may walk (in the thread room, the thread decides).
+  game.partner = new Partner(new Character(other, art[other], height), game.player, {
+    stepOk: (a, b) => game.floor.partnerStepOk?.(a, b) ?? true,
+    canEnter: (x, z) => game.floor.grid.isWalkable(x, z) && (game.floor.partnerCanEnter?.(x, z) ?? true),
+  });
+  stage.scene.add(game.player.group, game.partner.char.group);
+  resetRoom();
 
   // A footfall on every second cell: the player's a little louder than the partner's.
   const steps = (volume, n = 0) => () => { if (n++ % 2 === 0) audio.footstep(volume); };
@@ -60,32 +67,33 @@ function start(art, choice) {
   game.partner.char.onStep = steps(0.55);
   lastMode = game.partner.mode;
 
-  input.on('call', () => game.partner.call());
-  input.on('hold', () => game.partner.toggleHold());
+  input.on('call', () => { if (!game.frozen) game.partner.call(); });
+  input.on('hold', () => { if (!game.frozen) game.partner.toggleHold(); });
+  input.on('reset', resetRoom);
   input.enable();
   ui.showHud();
 }
 
-// The player may step onto a free cell that the thread can still reach.
+// The player may step onto a free cell, if the room allows it (in the thread room: if the thread reaches).
 function playerCanEnter(x, z) {
   const other = game.partner.char.cell;
   if (!game.floor.grid.isWalkable(x, z)) return false;
   if (x === other.x && z === other.z) return false;
-  if (cellDistance({ x, z }, other) > THREAD_CELLS) { game.thread.pull(); return false; }
-  return true;
+  return game.floor.playerCanEnter?.(x, z) ?? true;
 }
 
 function update(dt) {
-  const { player, partner, thread } = game;
+  const { player, partner } = game;
   if (player) {
     player.update(dt);
     partner.char.update(dt);
-    const dir = input.direction();
+    const dir = game.frozen ? null : input.direction();
     if (dir && !player.moving) {
       const [dx, dz] = dir;
       const pc = partner.char;
       const intoPartner = player.cell.x + dx === pc.cell.x && player.cell.z + dz === pc.cell.z;
-      if (intoPartner && partner.mode !== MODE.HOLD && !pc.moving) {
+      const canSwap = () => game.floor.swapOk?.(pc.cell, player.cell) ?? true;
+      if (intoPartner && partner.mode !== MODE.HOLD && !pc.moving && canSwap()) {
         // Walking into a partner who is not anchoring: they trade places, so nobody gets boxed in.
         pc.stepTime = player.stepTime;
         pc.tryStep(-dx, -dz, () => true);
@@ -94,12 +102,8 @@ function update(dt) {
         player.tryStep(dx, dz, playerCanEnter);
       }
     }
-    partner.update(dt);
+    if (!game.frozen) partner.update(dt);
     if (partner.mode !== lastMode) { lastMode = partner.mode; audio.pop(); }
-
-    const slack = Math.max(0, 1 - cellDistance(player.cell, partner.char.cell) / THREAD_CELLS);
-    const order = Math.max(player.feet.y, partner.char.feet.y) + 0.5;
-    thread.update(dt, player.hand, partner.char.hand, slack, order);
 
     const head = partner.char.head;
     ui.setPartner(partner.mode, stage.toScreen(head.x, head.y));
@@ -122,7 +126,7 @@ async function boot() {
   requestAnimationFrame(frame);
   const params = new URLSearchParams(location.search);
   // Calibration overlay: press the ` key, or open with ?debug
-  createDebug({ game, onChange: placeParents, open: params.has('debug') });
+  createDebug({ game, onChange: resetRoom, open: params.has('debug') });
   const preset = params.get('as'); // ?as=man skips the picker
   const choice = preset === 'man' || preset === 'woman' ? preset : await ui.chooseCharacter();
   start(game.art, choice);
