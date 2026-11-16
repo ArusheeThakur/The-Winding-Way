@@ -76,7 +76,18 @@ LANDING_RAIL = [(1362, 408), (1440, 366), (1440, 381), (1362, 423)]
 # ---- live light effects ----
 GLOWS = [(447, 133, 70), (853, 80, 70), (1265, 240, 75), (1440, 292, 75), (523, 705, 95)]
 POOLS = [(600, 800, 230), (1300, 410, 200), (880, 560, 330)]
-SPAWN_PLAYER, SPAWN_PARTNER = (700, 790), (650, 800)
+
+# ---- the thread puzzle (Stage 3) ----
+# Active pegs: indexes into POSTS, plus the pillar. Every other post is a plain obstacle.
+ACTIVE_POSTS = {'post_5': 4, 'post_10': 9, 'post_12': 11}
+THREAD_LENGTH = 32       # cells of thread, the whole budget
+SPAWN_CELLS = dict(player=[16, 20], partner=[20, 13])
+# How the thread is tangled at the start: one end stays with the player while the other is
+# carried through these grid points to the partner. Stored in the layout as plate pixels.
+TANGLE = [(11.5, 21.2), (6, 14), (6.3, 10), (9, 9.6), (11.5, 11), (14.5, 11.3), (16, 13),
+          (16.5, 16.5), (18.5, 17.5), (21, 15.5), (20.5, 13.5)]
+DOOR = [(1327, 326), (1327, 228), (1333, 210), (1346, 198), (1360, 193), (1376, 198), (1390, 212),
+        (1401, 232), (1402, 351)]
 CHARACTER_HEIGHT = 210  # the man's height in plate pixels, mid floor
 
 
@@ -150,7 +161,17 @@ def main():
         calibration=dict(cols=cols, rows=rows, rect=RECT, corners=corners),
         raisedLift=LANDING_LIFT,
         characterHeight=CHARACTER_HEIGHT,
-        spawns=dict(player=cell(SPAWN_PLAYER), partner=cell(SPAWN_PARTNER)),
+        spawns=SPAWN_CELLS,
+        thread=dict(
+            maxLength=THREAD_LENGTH,
+            # x, y: the peg's base on the plate. r: thickness in cells. height: where the thread sits, in pixels.
+            pegs=[dict(id=name, x=POSTS[i][0], y=POSTS[i][1], r=0.35, height=46, top=POSTS[i][2] + 20) for name, i in ACTIVE_POSTS.items()],
+            pillar=dict(x=PILLAR_BASE[0], y=PILLAR_BASE[1], radius=1.05, sides=8, height=64),
+            tangle=[at(gx, gz) for gx, gz in TANGLE],
+        ),
+        door=dict(points=[list(p) for p in DOOR], sortY=340, glow=dict(x=1364, y=285, r=150)),
+        # a faint ghost of a parent is drawn over this cutout when they stand behind it
+        hideBehind=dict(x=PILLAR_BASE[0], halfWidth=120, sortY=PILLAR_BASE[1]),
         glows=[dict(x=x, y=y, r=r) for x, y, r in GLOWS],
         pools=[dict(x=x, y=y, r=r) for x, y, r in POOLS],
         cutouts=cut,
