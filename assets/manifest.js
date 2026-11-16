@@ -1,20 +1,22 @@
 // The one art manifest. Every piece of art is loaded by name from here.
-// To replace a placeholder: drop the new file into /assets and point the
-// name at it (or simply overwrite the file and keep the same name).
+// To replace art: overwrite the file, or drop a new file into /assets and point the name at it.
 export const ART = {
-  man: 'assets/man.svg',
-  woman: 'assets/woman.svg',
+  // Characters: one standing pose each, transparent background, facing right.
+  man: 'assets/characters/parent_man.png',
+  woman: 'assets/characters/parent_woman.png',
+  daughter: 'assets/characters/daughter.png',
 
-  // Thread room props. Any image size works: the game keeps each prop's
-  // width and takes the height from the picture's own proportions.
-  peg: 'assets/peg.svg',               // upright cutout, drawn standing
-  spool_rose: 'assets/spool_rose.svg', // upright cutout
-  spool_blue: 'assets/spool_blue.svg', // upright cutout
-  spool_gold: 'assets/spool_gold.svg', // upright cutout
-  lantern: 'assets/lantern.svg',       // upright cutout, hangs on a string
-  banner: 'assets/banner.svg',         // flat on a wall, drawn front-on
-  rug: 'assets/rug.svg',               // flat on the floor, drawn from straight above
-  light_pool: 'assets/light_pool.svg', // soft glow, added on top of the floor
+  // Thread room.
+  thread_room: 'assets/plates/thread-room.png',           // the painted plate
+  thread_room_mask: 'assets/plates/thread-room-mask.png', // white = floor, grey = raised landing, black = not walkable
+
+  // Soft warm glow used for lantern light and floor light.
+  light_pool: 'assets/light_pool.svg',
+};
+
+// Traced data for each plate: grid calibration, cutout layers, lights, spawns.
+export const LAYOUTS = {
+  thread_room: 'assets/plates/thread-room.json',
 };
 
 // Placeholder display names (not locked, see NOTES.md Progress Log).

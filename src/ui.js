@@ -49,7 +49,7 @@ export function createUI() {
         label.dataset.mode = mode;
         label.textContent = LABEL[mode];
       }
-      label.style.transform = `translate(-50%, -100%) translate(${screen.x}px, ${screen.y}px)`;
+      label.style.transform = `translate(-50%, -100%) translate(${screen.x}px, ${screen.y - 6}px)`;
     },
   };
 }

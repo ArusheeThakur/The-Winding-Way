@@ -5,8 +5,8 @@
 export const MODE = { FOLLOW: 'follow', HOLD: 'hold', COME: 'come' };
 
 const FOLLOW_DELAY = 0.16; // a small beat before setting off, so it reads as following
-const FOLLOW_STEP = 0.2;
-const COME_STEP = 0.16;    // a little quicker when called
+const FOLLOW_STEP = 0.16;
+const COME_STEP = 0.13;    // a little quicker when called
 
 export class Partner {
   constructor(char, leader) {
