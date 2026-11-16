@@ -27,5 +27,13 @@ export function makeMapping(corners, rect) {
   const mid = area((rx0 + rx1) / 2, (rz0 + rz1) / 2);
   const scaleAt = (gx, gz) => Math.sqrt(area(gx, gz) / mid);
 
-  return { project, scaleAt };
+  // Plate pixels back to a grid position.
+  const unproject = (x, y) => {
+    const m11 = a - g * x, m12 = b - h * x, m21 = d - g * y, m22 = e - h * y;
+    const det = m11 * m22 - m12 * m21;
+    const u = ((x - x0) * m22 - m12 * (y - y0)) / det, v = (m11 * (y - y0) - (x - x0) * m21) / det;
+    return { x: rx0 + u * (rx1 - rx0), z: rz0 + v * (rz1 - rz0) };
+  };
+
+  return { project, unproject, scaleAt };
 }

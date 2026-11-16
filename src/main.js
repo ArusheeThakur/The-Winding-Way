@@ -55,6 +55,7 @@ function start(art, choice) {
   game.player = new Character(choice, art[choice], height);
   // The room has a say in where the partner may walk (in the thread room, the thread decides).
   game.partner = new Partner(new Character(other, art[other], height), game.player, {
+    gap: () => game.floor.partnerGap?.(),
     stepOk: (a, b) => game.floor.partnerStepOk?.(a, b) ?? true,
     canEnter: (x, z) => game.floor.grid.isWalkable(x, z) && (game.floor.partnerCanEnter?.(x, z) ?? true),
   });

@@ -13,14 +13,10 @@ export class Grid {
   block(x, z) { this.blocked.add(this.key(x, z)); }
   isWalkable(x, z) { return this.inBounds(x, z) && !this.blocked.has(this.key(x, z)); }
 
-  // Centre of a cell in world space.
-  toWorld(x, z) {
-    return { x: x - (this.w - 1) / 2, z: z - (this.d - 1) / 2 };
-  }
-
   // Shortest path (breadth first) from one cell to another.
   // Returns the list of cells after `from`, ending at `to`, or null.
-  path(from, to) {
+  // stepOk(a, b), if given, can forbid single steps.
+  path(from, to, stepOk) {
     const start = this.key(from.x, from.z);
     const goal = this.key(to.x, to.z);
     if (start === goal) return [];
@@ -33,6 +29,7 @@ export class Grid {
         const k = this.key(n.x, n.z);
         if (cameFrom.has(k)) continue;
         if (k !== goal && !this.isWalkable(n.x, n.z)) continue;
+        if (stepOk && !stepOk(c, n)) continue;
         cameFrom.set(k, c);
         if (k === goal) {
           const out = [n];

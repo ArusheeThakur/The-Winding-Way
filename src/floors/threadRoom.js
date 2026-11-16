@@ -95,6 +95,8 @@ export async function create({ art }) {
     const length = next.length();
     return length <= line.maxLength - RESERVE || length <= line.length();
   };
+  // On the small door landing the partner comes right up beside the player.
+  room.partnerGap = () => (room.isRaised(game.player.cell.x, game.player.cell.z) ? 1 : undefined);
   // Trading places is fine as long as the thread allows both steps.
   room.swapOk = (playerTo, partnerTo) => {
     const next = line.after('a', centre(playerTo.x, playerTo.z));

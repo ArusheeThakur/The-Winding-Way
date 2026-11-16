@@ -1,4 +1,4 @@
-// Keyboard input. Arrows or WASD move, Space or E calls, H or Q holds.
+// Keyboard input. Arrows or WASD move, Space or E calls, H or Q holds, R resets the room.
 // On the isometric floor: up is up-right, right is down-right, and so on.
 const MOVE = {
   ArrowUp: [0, -1], KeyW: [0, -1],
@@ -6,11 +6,11 @@ const MOVE = {
   ArrowLeft: [-1, 0], KeyA: [-1, 0],
   ArrowRight: [1, 0], KeyD: [1, 0],
 };
-const ACTION = { Space: 'call', KeyE: 'call', KeyH: 'hold', KeyQ: 'hold' };
+const ACTION = { Space: 'call', KeyE: 'call', KeyH: 'hold', KeyQ: 'hold', KeyR: 'reset' };
 
 export function createInput() {
   const held = []; // most recent last
-  const handlers = { call: [], hold: [] };
+  const handlers = { call: [], hold: [], reset: [] };
   let enabled = false;
   let tapped = null; // a quick tap still counts for one step, even if released before the next frame
 

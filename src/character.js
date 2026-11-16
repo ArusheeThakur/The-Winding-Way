@@ -28,6 +28,7 @@ export class Character {
     this.floor = null;
     this.grid = null;
     this.cell = { x: 0, z: 0 };
+    this.fromCell = { x: 0, z: 0 };
     this.moving = false;
     this.stepTime = 0.16;
     this.t = 0;
@@ -55,13 +56,21 @@ export class Character {
     geo.translate(0, h / 2 - h * FEET, 0); // pivot at the feet
     this.sprite = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthTest: false }));
     this.group.add(this.sprite);
+
+    // A faint copy that a room can draw over whatever is hiding this character.
+    this.ghost = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthTest: false, opacity: 0.32 }));
+    this.ghost.visible = false;
+    this.sprite.add(this.ghost);
   }
 
-  // Where the thread is held, in stage units.
-  get hand() {
-    const p = this.group.position;
-    return new THREE.Vector3(p.x, p.y + (this.height * 0.45 + this.sprite.position.y) * this.group.scale.y, 0);
+  // Where the feet are on the grid right now (cell centres are at .5), for the thread.
+  get gridPos() {
+    const { fromCell: f, cell: c, t } = this;
+    return { x: f.x + (c.x - f.x) * t + 0.5, z: f.z + (c.z - f.z) * t + 0.5 };
   }
+
+  // How high above the floor the thread is held, in plate pixels.
+  get handHeight() { return (this.height * 0.4 + this.sprite.position.y) * this.group.scale.y; }
 
   // Top of the head on the plate, for labels.
   get head() {
@@ -80,7 +89,9 @@ export class Character {
     this.floor = floor;
     this.grid = floor.grid;
     this.cell = { x, z };
+    this.fromCell = { x, z };
     this.moving = false;
+    this.t = 1;
     this.setPose(floor.cellToPlate(x, z));
   }
 
@@ -92,6 +103,7 @@ export class Character {
     const side = to.x - this.feet.x;
     if (Math.abs(side) > 1) this.facing = side > 0 ? 1 : -1;
     if (!canEnter(x, z)) return false;
+    this.fromCell = this.cell;
     this.cell = { x, z };
     this.from = { x: this.feet.x, y: this.feet.y, scale: this.group.scale.x };
     this.to = to;

@@ -98,8 +98,11 @@ export function createPlateRoom({ plate, mask, glow, layout }) {
       const lift = raised.has(grid.key(x, z)) ? layout.raisedLift : 0;
       return { x: p.x, y: p.y - lift, scale: mapping.scaleAt(x + 0.5, z + 0.5) };
     },
-    // Any grid point (fractions allowed) on the plate, for the debug overlay.
+    // Any grid point (fractions allowed) on the plate, and back.
     gridToPlate: (gx, gz) => mapping.project(gx, gz),
+    plateToGrid: (x, y) => mapping.unproject(x, y),
+    // Extra height of the floor under a grid point (the raised landing).
+    liftAt: (gx, gz) => (raised.has(grid.key(Math.floor(gx), Math.floor(gz))) ? layout.raisedLift : 0),
 
     // The nearest walkable cell to the one asked for.
     nearestWalkable(x, z) {
