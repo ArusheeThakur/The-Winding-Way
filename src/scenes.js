@@ -1,4 +1,4 @@
-// Scene manager. Each floor is its own module that exports create(), which returns:
+// Scene manager. Each floor is its own module that exports create({ art }), which returns:
 //   { grid, group, spawns: { player, partner }, wallHeight?, update?(dt, game), dispose?() }
 export class SceneManager {
   constructor(stage) {
@@ -10,13 +10,13 @@ export class SceneManager {
 
   register(name, create) { this.floors.set(name, create); }
 
-  load(name) {
+  load(name, context) {
     if (this.current) {
       this.stage.scene.remove(this.current.group);
       disposeTree(this.current.group);
       this.current.dispose?.();
     }
-    this.current = this.floors.get(name)();
+    this.current = this.floors.get(name)(context);
     this.currentName = name;
     this.stage.scene.add(this.current.group);
     const { grid } = this.current;

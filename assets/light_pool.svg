@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- placeholder: soft pool of warm light. drawn additively on the floor and as lantern glow -->
+  <defs>
+    <radialGradient id="g">
+      <stop offset="0" stop-color="#ffd98a" stop-opacity="0.95"/>
+      <stop offset="0.45" stop-color="#ffc56e" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#ffb45e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="128" cy="128" r="128" fill="url(#g)"/>
+</svg>

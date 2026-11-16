@@ -9,6 +9,7 @@ import { Partner, MODE } from './partner.js';
 import { Thread } from './thread.js';
 import { cellDistance } from './grid.js';
 import { create as createTestFloor } from './floors/testFloor.js';
+import { create as createThreadRoom } from './floors/threadRoom.js';
 
 // How many cells apart the thread lets the two parents get (stage 1 stand-in).
 const THREAD_CELLS = 6;
@@ -18,12 +19,13 @@ const input = createInput();
 const ui = createUI();
 const scenes = new SceneManager(stage);
 scenes.register('test', createTestFloor);
+scenes.register('thread', createThreadRoom);
 
-const game = { stage, scenes, player: null, partner: null, thread: null, floor: null };
+const game = { art: null, stage, scenes, player: null, partner: null, thread: null, floor: null };
 window.__game = game; // handy for testing in the console
 
 function enterFloor(name) {
-  game.floor = scenes.load(name);
+  game.floor = scenes.load(name, { art: game.art });
   if (!game.player) return;
   const { grid, spawns } = game.floor;
   game.player.place(grid, spawns.player.x, spawns.player.z);
@@ -98,11 +100,12 @@ function frame(now) {
 }
 
 async function boot() {
-  enterFloor('test');
+  game.art = await loadArt();
+  const params = new URLSearchParams(location.search);
+  enterFloor(scenes.floors.has(params.get('floor')) ? params.get('floor') : 'thread'); // ?floor=test
   requestAnimationFrame(frame);
-  const art = await loadArt();
-  const preset = new URLSearchParams(location.search).get('as'); // ?as=man skips the picker
+  const preset = params.get('as'); // ?as=man skips the picker
   const choice = preset === 'man' || preset === 'woman' ? preset : await ui.chooseCharacter();
-  start(art, choice);
+  start(game.art, choice);
 }
 boot();

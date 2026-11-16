@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="400" viewBox="0 0 100 200">
+  <!-- placeholder: peg. a wooden post with a brass top, the thread wraps around these -->
+  <g stroke="#3b2450" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M18 172 V184 A32 11 0 0 0 82 184 V172 Z" fill="#8f5a36"/>
+    <ellipse cx="50" cy="172" rx="32" ry="11" fill="#b9794a"/>
+    <path d="M36 70 V172 A14 5 0 0 0 64 172 V70 Z" fill="#c98a55"/>
+    <path d="M54 72 V175" stroke="#a36a3c" stroke-width="6" fill="none"/>
+    <rect x="31" y="60" width="38" height="14" rx="6" fill="#c8923f"/>
+    <circle cx="50" cy="38" r="24" fill="#e8b563"/>
+  </g>
+  <circle cx="42" cy="30" r="7" fill="#ffe9b0"/>
+</svg>
