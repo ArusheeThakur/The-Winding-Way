@@ -25,7 +25,7 @@ function strip(stops) {
 }
 
 const LOOSE = [new THREE.Color('#d6405c'), new THREE.Color('#b02f4b')]; // two shades, alternating, read as twist
-const TAUT = [new THREE.Color('#ff8a70'), new THREE.Color('#e9605a')];
+const TAUT = [new THREE.Color('#ff6a55'), new THREE.Color('#de4648')];
 
 export class ThreadView {
   constructor(glowTexture) {
@@ -83,7 +83,7 @@ export class ThreadView {
     const taut = Math.max(this.tug, Math.min(1, Math.max(0, (tension - 0.8) / 0.2)));
     const slack = Math.min(1, Math.max(0.06, (1 - tension) * 2.2));
     this.rope.forEach((m, i) => m.color.copy(LOOSE[i]).lerp(TAUT[i], taut));
-    this.glow.opacity = 0.2 + 0.5 * taut + 0.03 * Math.sin(this.time * 3);
+    this.glow.opacity = 0.2 + 0.28 * taut + 0.03 * Math.sin(this.time * 3);
 
     // Sample the rope: straight between nodes on the floor, sagging in height.
     const nodes = this.nodes(line, heightA, heightB);

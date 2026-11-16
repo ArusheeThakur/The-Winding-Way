@@ -20,6 +20,7 @@ export class Partner {
     this.rules = rules;
     this.mode = MODE.FOLLOW;
     this.wait = 0;
+    this.blockedFor = 0; // seconds it has wanted to walk but was not allowed to
   }
 
   call() { this.mode = MODE.COME; }
@@ -29,10 +30,11 @@ export class Partner {
     this.wait = FOLLOW_DELAY;
   }
 
-  reset() { this.mode = MODE.FOLLOW; this.wait = 0; }
+  reset() { this.mode = MODE.FOLLOW; this.wait = 0; this.blockedFor = 0; }
 
   update(dt) {
     const me = this.char;
+    if (this.mode === MODE.HOLD) this.blockedFor = 0;
     if (me.moving || this.mode === MODE.HOLD) return;
 
     const path = me.grid.path(me.cell, this.leader.cell, this.rules.stepOk);
@@ -40,6 +42,7 @@ export class Partner {
     if (!path || path.length <= gap) {        // close enough to the player, or no way there
       if (this.mode === MODE.COME && path) this.mode = MODE.FOLLOW;
       this.wait = FOLLOW_DELAY;
+      this.blockedFor = path ? 0 : this.blockedFor + dt;
       return;
     }
 
@@ -47,6 +50,7 @@ export class Partner {
 
     me.stepTime = this.mode === MODE.COME ? COME_STEP : FOLLOW_STEP;
     const next = path[0];
-    me.tryStep(next.x - me.cell.x, next.z - me.cell.z, this.rules.canEnter);
+    const went = me.tryStep(next.x - me.cell.x, next.z - me.cell.z, this.rules.canEnter);
+    this.blockedFor = went ? 0 : this.blockedFor + dt;
   }
 }

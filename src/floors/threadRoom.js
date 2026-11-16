@@ -16,6 +16,7 @@ const HINT = {
   tight: 'The thread is pulled tight.',
   stuck: 'Tangled? Press R to start the room again.',
   door: 'You both need to stand at the door. Press Space to call.',
+  caught: 'The thread is still caught near your partner. Press H so they hold still, then walk around that post.',
 };
 
 export async function create({ art }) {
@@ -104,6 +105,11 @@ export async function create({ art }) {
     return next.length() <= line.maxLength;
   };
 
+  // True when the only thing still holding the thread is the peg next to the partner.
+  // and the player is close enough to do something about it.
+  const lastPegOnly = () => line.bends.length > 0 && line.bends.every((bend) => bend.peg.id === line.bends[0].peg.id)
+    && Math.abs(line.a.x - line.b.x) + Math.abs(line.a.z - line.b.z) < 7;
+
   const baseUpdate = room.update;
   room.update = (dt, g) => {
     baseUpdate(dt);
@@ -133,6 +139,10 @@ export async function create({ art }) {
       g.audio.chime();
       g.ui.hint('', 0);
       setTimeout(() => { if (solved) g.ui.showEndCard(); }, 2200);
+    } else if (!solved && g.partner.blockedFor > 2.5 && lastPegOnly() && !player.moving) {
+      // The partner wants to come but the thread will not let them.
+      g.ui.hint(HINT.caught, 6);
+      g.partner.blockedFor = -8;
     } else if (!solved && atDoor(player)) {
       waiting += dt;
       if (waiting > 2.5) { g.ui.hint(HINT.door, 4); waiting = -6; }
