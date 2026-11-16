@@ -14,7 +14,7 @@
   ]
  },
  "raisedLift": 12,
- "characterHeight": 140,
+ "characterHeight": 210,
  "spawns": {
   "player": [16, 20],
   "partner": [15, 21]

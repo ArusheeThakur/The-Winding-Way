@@ -77,7 +77,7 @@ LANDING_RAIL = [(1362, 408), (1440, 366), (1440, 381), (1362, 423)]
 GLOWS = [(447, 133, 70), (853, 80, 70), (1265, 240, 75), (1440, 292, 75), (523, 705, 95)]
 POOLS = [(600, 800, 230), (1300, 410, 200), (880, 560, 330)]
 SPAWN_PLAYER, SPAWN_PARTNER = (700, 790), (650, 800)
-CHARACTER_HEIGHT = 140  # the man's height in plate pixels, mid floor
+CHARACTER_HEIGHT = 210  # the man's height in plate pixels, mid floor
 
 
 def ellipse_pts(cx, cy, rx, ry, a0, a1, n=14):

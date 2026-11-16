@@ -60,10 +60,11 @@
     #partner-label {
       position: fixed; left: 0; top: 0; pointer-events: none;
       box-shadow: 0 2px 6px rgba(36, 21, 47, 0.35);
-      padding: 3px 11px; border-radius: 999px; font-size: 14px; font-style: italic;
-      background: var(--cream); color: var(--plum); border: 1.5px solid var(--plum);
-      transition: background 0.2s ease;
+      padding: 1px 8px; border-radius: 999px; font-size: 11px; font-style: italic; opacity: 0;
+      background: var(--cream); color: var(--plum); border: 1px solid var(--plum);
+      transition: background 0.2s ease, opacity 0.45s ease;
     }
+    #partner-label.on { opacity: 1; transition: background 0.2s ease, opacity 0.12s ease; }
     #partner-label[data-mode="hold"] { background: var(--gold); }
     #partner-label[data-mode="come"] { background: var(--rose); color: #fff; }
   </style>

@@ -8,6 +8,7 @@ export function createUI() {
   const cards = document.getElementById('cards');
   const hud = document.getElementById('hud');
   const label = document.getElementById('partner-label');
+  let labelTimer = 0;
 
   return {
     // Shows the picker and resolves with 'man' or 'woman'.
@@ -43,11 +44,14 @@ export function createUI() {
       label.classList.remove('hidden');
     },
 
-    // Keeps the little state chip floating above the partner.
+    // The little state chip above the partner: shown when the mode changes, then it fades away.
     setPartner(mode, screen) {
       if (label.dataset.mode !== mode) {
         label.dataset.mode = mode;
         label.textContent = LABEL[mode];
+        label.classList.add('on');
+        clearTimeout(labelTimer);
+        labelTimer = setTimeout(() => label.classList.remove('on'), 1000);
       }
       label.style.transform = `translate(-50%, -100%) translate(${screen.x}px, ${screen.y - 6}px)`;
     },

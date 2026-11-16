@@ -1,12 +1,13 @@
 // Partner AI. Three readable rules, on purpose:
-//   Follow: stays next to the player (default).
+//   Follow: stays close to the player, leaving one empty cell between them (default).
 //   Hold:   stays put and acts as an anchor.
-//   Come:   walks straight to the player, then goes back to Follow.
+//   Come:   walks straight to the player (stopping one cell short), then goes back to Follow.
 export const MODE = { FOLLOW: 'follow', HOLD: 'hold', COME: 'come' };
 
 const FOLLOW_DELAY = 0.16; // a small beat before setting off, so it reads as following
 const FOLLOW_STEP = 0.16;
 const COME_STEP = 0.13;    // a little quicker when called
+const GAP = 2;             // stop this many steps from the player, so the two sprites never stack
 
 export class Partner {
   constructor(char, leader) {
@@ -30,7 +31,7 @@ export class Partner {
     if (me.moving || this.mode === MODE.HOLD) return;
 
     const path = me.grid.path(me.cell, this.leader.cell);
-    if (!path || path.length <= 1) {          // beside the player, or no way there
+    if (!path || path.length <= GAP) {        // close enough to the player, or no way there
       if (this.mode === MODE.COME && path) this.mode = MODE.FOLLOW;
       this.wait = FOLLOW_DELAY;
       return;
