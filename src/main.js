@@ -10,6 +10,7 @@ import { Thread } from './thread.js';
 import { cellDistance } from './grid.js';
 import { create as createThreadRoom } from './floors/threadRoom.js';
 import { createDebug } from './debug.js';
+import { createAudio } from './audio.js';
 
 // How many cells apart the thread lets the two parents get (stand-in until Stage 3).
 const THREAD_CELLS = 10;
@@ -17,10 +18,11 @@ const THREAD_CELLS = 10;
 const stage = createStage(document.getElementById('game'));
 const input = createInput();
 const ui = createUI();
+const audio = createAudio();
 const scenes = new SceneManager(stage);
 scenes.register('thread', createThreadRoom);
 
-const game = { art: null, stage, scenes, player: null, partner: null, thread: null, floor: null };
+const game = { audio, art: null, stage, scenes, player: null, partner: null, thread: null, floor: null };
 window.__game = game; // handy for testing in the console
 
 async function enterFloor(name) {
@@ -41,6 +43,8 @@ function placeParents() {
   game.partner.reset();
 }
 
+let lastMode = null; // to hear when the partner's mode changes
+
 function start(art, choice) {
   const other = choice === 'man' ? 'woman' : 'man';
   const height = game.floor.layout.characterHeight;
@@ -49,6 +53,12 @@ function start(art, choice) {
   game.thread = new Thread();
   stage.scene.add(game.player.group, game.partner.char.group, game.thread.mesh);
   placeParents();
+
+  // A footfall on every second cell: the player's a little louder than the partner's.
+  const steps = (volume, n = 0) => () => { if (n++ % 2 === 0) audio.footstep(volume); };
+  game.player.onStep = steps(1);
+  game.partner.char.onStep = steps(0.55);
+  lastMode = game.partner.mode;
 
   input.on('call', () => game.partner.call());
   input.on('hold', () => game.partner.toggleHold());
@@ -85,6 +95,7 @@ function update(dt) {
       }
     }
     partner.update(dt);
+    if (partner.mode !== lastMode) { lastMode = partner.mode; audio.pop(); }
 
     const slack = Math.max(0, 1 - cellDistance(player.cell, partner.char.cell) / THREAD_CELLS);
     const order = Math.max(player.feet.y, partner.char.feet.y) + 0.5;

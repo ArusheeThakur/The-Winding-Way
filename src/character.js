@@ -97,6 +97,7 @@ export class Character {
     this.to = to;
     this.t = 0;
     this.moving = true;
+    this.onStep?.();
     return true;
   }
 
