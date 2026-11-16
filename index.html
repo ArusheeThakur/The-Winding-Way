@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Winding Way</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      --night: #24152f; --plum: #4a2d6b; --cream: #f6e7d0;
+      --gold: #e8b563; --rose: #d9798b;
+      --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: var(--night); color: var(--cream); font-family: var(--serif); }
+    #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+    .hidden { display: none !important; }
+
+    #select {
+      position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+      background: radial-gradient(ellipse at center, rgba(74, 45, 107, 0.82), rgba(36, 21, 47, 0.96));
+      backdrop-filter: blur(6px);
+    }
+    #select h1 { margin: 0; font-size: 56px; font-weight: 500; letter-spacing: 0.02em; color: var(--gold); }
+    #select p { margin: 0 0 20px; font-size: 20px; font-style: italic; opacity: 0.9; }
+    #cards { display: flex; gap: 28px; }
+    .card {
+      width: 190px; padding: 22px 18px 16px; border-radius: 22px; cursor: pointer;
+      border: 2px solid rgba(232, 181, 99, 0.35); background: rgba(246, 231, 208, 0.08);
+      color: var(--cream); font: 22px var(--serif);
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    }
+    .card img { height: 190px; }
+    .card:hover, .card:focus-visible {
+      outline: none; transform: translateY(-6px); border-color: var(--gold); background: rgba(246, 231, 208, 0.16);
+    }
+    #select small { margin-top: 18px; font-size: 14px; opacity: 0.65; }
+
+    #hud {
+      position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+      display: flex; gap: 22px; padding: 10px 22px; border-radius: 999px;
+      background: rgba(36, 21, 47, 0.72); border: 1px solid rgba(232, 181, 99, 0.3);
+      font-size: 15px; white-space: nowrap;
+    }
+    #hud kbd {
+      font: 13px ui-monospace, Menlo, monospace; color: var(--night); background: var(--cream);
+      padding: 2px 7px; border-radius: 6px; margin-right: 6px;
+    }
+    #partner-label {
+      position: fixed; left: 0; top: 0; pointer-events: none;
+      padding: 3px 11px; border-radius: 999px; font-size: 14px; font-style: italic;
+      background: var(--cream); color: var(--plum); border: 1.5px solid var(--plum);
+      transition: background 0.2s ease;
+    }
+    #partner-label[data-mode="hold"] { background: var(--gold); }
+    #partner-label[data-mode="come"] { background: var(--rose); color: #fff; }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="select" class="hidden">
+    <h1>The Winding Way</h1>
+    <p>Who will you walk as?</p>
+    <div id="cards"></div>
+    <small>The other one comes with you, on the same thread.</small>
+  </div>
+
+  <div id="hud" class="hidden">
+    <span><kbd>WASD</kbd>or arrows to move</span>
+    <span><kbd>Space</kbd>call</span>
+    <span><kbd>H</kbd>hold / follow</span>
+  </div>
+  <div id="partner-label" class="hidden"></div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
