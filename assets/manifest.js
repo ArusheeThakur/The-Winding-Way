@@ -29,7 +29,5 @@ export const NAMES = {
 // does not list folders it tries these names, so use them or change them here.
 export const MUSIC_FOLDER = 'assets/audio/';
 export const MUSIC = [
-  'assets/audio/gymnopedie-1.mp3',
-  'assets/audio/clair-de-lune.mp3',
-  'assets/audio/prelude-in-c.mp3',
+  'assets/audio/gregorquendel-beethoven-moonlight-sonata-op-27-nr-2-concert-grand-version-227468.mp3',
 ];
