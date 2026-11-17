@@ -9,6 +9,7 @@ export function createUI() {
   const hud = document.getElementById('hud');
   const label = document.getElementById('partner-label');
   const hintBox = document.getElementById('hint');
+  const retryNote = document.getElementById('retry');
   let hintTimer = 0;
   let labelTimer = 0;
 
@@ -53,6 +54,9 @@ export function createUI() {
       hud.classList.remove('hidden');
       label.classList.remove('hidden');
     },
+
+    // The small "Press R to try again" note in the corner.
+    retry(on) { retryNote.classList.toggle('on', on); },
 
     // A soft word from the partner, in the same chip.
     say(text) {

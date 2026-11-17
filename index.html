@@ -64,6 +64,13 @@
       opacity: 0; transition: opacity 0.6s ease;
     }
     #hint.on { opacity: 1; }
+    #retry {
+      position: fixed; right: 22px; bottom: 26px; padding: 6px 16px; border-radius: 999px; font-size: 14px; font-style: italic;
+      background: rgba(36, 21, 47, 0.85); border: 1px solid rgba(232, 181, 99, 0.45); pointer-events: none;
+      opacity: 0; transition: opacity 0.8s ease;
+    }
+    #retry.on { opacity: 1; }
+    #retry kbd { font: 12px ui-monospace, Menlo, monospace; color: var(--night); background: var(--cream); padding: 1px 6px; border-radius: 5px; margin: 0 3px; font-style: normal; }
     /* The story: painted intro and ending, drawn over the game inside the same frame. */
     #frame { overflow: hidden; }
     #story { position: absolute; inset: 0; overflow: hidden; z-index: 5; }
@@ -118,7 +125,7 @@
       transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
     }
     #story-again:hover, #story-again:focus-visible { outline: none; transform: translateY(-3px); background: rgba(246, 231, 208, 0.22); border-color: var(--gold); }
-    .in-story #hud, .in-story #hint, .in-story #partner-label { opacity: 0 !important; transition: opacity 0.8s ease; }
+    .in-story #hud, .in-story #hint, .in-story #retry, .in-story #partner-label { opacity: 0 !important; transition: opacity 0.8s ease; }
     #select { animation: story-arrive 1s ease both; }
     @keyframes story-arrive { from { opacity: 0; } to { opacity: 1; } }
     #partner-label {
@@ -169,6 +176,7 @@
   </div>
   <div id="partner-label" class="hidden"></div>
   <div id="hint"></div>
+  <div id="retry">Press <kbd>R</kbd> to try again</div>
 
   <script type="module" src="src/main.js"></script>
 </body>

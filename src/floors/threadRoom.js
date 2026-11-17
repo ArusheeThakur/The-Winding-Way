@@ -7,6 +7,10 @@ import { createPlateRoom } from '../plateRoom.js';
 import { ThreadLine } from '../threadLogic.js';
 import { ThreadView } from '../thread.js';
 
+const CUE_AFTER = 10;   // seconds without progress before the next peg is pointed out (first two moves only)
+const CUE_MOVES = 2;
+const HINT_EVERY = 20;  // seconds without progress between text hints
+const RETRY_AFTER = 30; // seconds without progress before the small "Press R" note
 const RESERVE = 2;      // cells of thread the partner leaves spare, so it never pins the player
 const MAX_WIND = 1.6;   // the partner will not wind the thread further than this round a peg (radians)
 const centre = (x, z) => ({ x: x + 0.5, z: z + 0.5 });
@@ -59,6 +63,7 @@ export async function create({ art }) {
   let bendCount = 0;     // to hear the thread catch and come free
   let fewest = 0;        // the fewest pegs the thread has been caught on so far (progress)
   let idle = 0;          // seconds since the last progress
+  let hintAt = HINT_EVERY; // show a text hint when idle reaches this
   let strain = 0;        // seconds until the partner's next tug while it is held back
   let quiet = 0;         // seconds before the partner may speak again
   let caughtWait = 0;    // seconds before the "press H" hint may show again
@@ -84,7 +89,7 @@ export async function create({ art }) {
     line.moveEnd('b', b);
     room.line = line;
     open = 0; solved = false; refusals = 0; waiting = 0;
-    fewest = bendCount = tangled = Math.max(1, caughtOn()); tugBack = 0; idle = 0; strain = 0; quiet = 0; caughtWait = 0;
+    fewest = bendCount = tangled = Math.max(1, caughtOn()); tugBack = 0; idle = 0; hintAt = HINT_EVERY; strain = 0; quiet = 0; caughtWait = 0;
     g.ui.hint(HINT.start, 16);
   };
 
@@ -190,12 +195,17 @@ export async function create({ art }) {
     if (now !== bendCount) { g.audio.pluck(now > bendCount); bendCount = now; }
 
     // Progress is the thread coming off a peg. After a while without any, show a hint again.
-    if (now < fewest) { fewest = now; idle = 0; }
+    if (now < fewest) { fewest = now; idle = 0; hintAt = HINT_EVERY; }
     idle += dt;
-    if (!solved && idle > 20) {
-      idle = 0;
+    if (!solved && idle > hintAt) {
+      hintAt += HINT_EVERY;
       g.ui.hint(!line.bends.length ? HINT.free : onePegLeft() ? HINT.caught : HINT.start, 10);
     }
+    // For the first two moves, point out the next peg to walk round: the one nearest the player's hand.
+    const teaching = !solved && tangled - fewest < CUE_MOVES && idle > CUE_AFTER && line.bends.length;
+    view.cue = teaching ? line.bends[0].peg.id : null;
+    // Stuck for a while: a small note about starting again, out of the way in the corner.
+    g.ui.retry(!solved && idle > RETRY_AFTER);
 
     // The door opens when both parents stand on the landing.
     const atDoor = (c) => !c.moving && room.isRaised(c.cell.x, c.cell.z);
@@ -208,10 +218,10 @@ export async function create({ art }) {
     } else if (!solved && g.partner.blockedFor > 2.5 && caughtWait <= 0 && lastPegOnly() && !player.moving) {
       // The partner wants to come but the thread will not let them.
       g.ui.hint(HINT.caught, 8);
-      caughtWait = 10; idle = 0;
+      caughtWait = 10; hintAt = idle + HINT_EVERY;
     } else if (!solved && atDoor(player)) {
       waiting += dt;
-      if (waiting > 2.5) { g.ui.hint(line.bends.length ? HINT.notFree : HINT.door, 6); waiting = -6; idle = 0; }
+      if (waiting > 2.5) { g.ui.hint(line.bends.length ? HINT.notFree : HINT.door, 6); waiting = -6; hintAt = idle + HINT_EVERY; }
     } else if (!solved) {
       waiting = Math.min(waiting, 0);
     }

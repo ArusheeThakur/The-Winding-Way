@@ -50,6 +50,7 @@ export class ThreadView {
     this.halos = new Map(); // one soft halo per peg, lit while the thread is round it
     this.tug = 0;
     this.time = 0;
+    this.cue = null;    // id of a peg to point out with a slow, soft pulse (or null)
   }
 
   // A short flash when someone pulls against a taut thread.
@@ -185,7 +186,11 @@ export class ThreadView {
     for (const [id, halo] of this.halos) {
       const target = hooked.has(id) ? halo.strength : 0;
       halo.level += (target - halo.level) * (1 - Math.exp(-dt * 4));
-      halo.mesh.material.opacity = halo.level * (1 + 0.15 * Math.sin(this.time * 2.6));
+      // the peg being pointed out breathes: brighter and a little larger, slowly
+      halo.cue += ((id === this.cue ? 1 : 0) - halo.cue) * (1 - Math.exp(-dt * 2));
+      const breath = halo.cue * (0.5 + 0.5 * Math.sin(this.time * 2.4));
+      halo.mesh.material.opacity = Math.min(1, halo.level * (1 + 0.15 * Math.sin(this.time * 2.6)) + breath * 0.75);
+      halo.mesh.scale.set(halo.w * (1 + breath * 0.9), halo.h * (1 + breath * 0.9), 1);
     }
   }
 
@@ -217,6 +222,6 @@ export class ThreadView {
     mesh.position.set(x, -y, 0);
     mesh.scale.set(w, h, 1);
     mesh.renderOrder = order;
-    this.halos.set(id, { mesh, strength, level: 0 });
+    this.halos.set(id, { mesh, strength, level: 0, cue: 0, w, h });
   }
 }
