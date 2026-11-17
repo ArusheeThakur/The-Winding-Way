@@ -24,3 +24,12 @@ export const NAMES = {
   man: 'Papa',
   woman: 'Mama',
 };
+
+// Music: drop files into this folder. Locally the game finds whatever is there. On a host that
+// does not list folders it tries these names, so use them or change them here.
+export const MUSIC_FOLDER = 'assets/audio/';
+export const MUSIC = [
+  'assets/audio/gymnopedie-1.mp3',
+  'assets/audio/clair-de-lune.mp3',
+  'assets/audio/prelude-in-c.mp3',
+];

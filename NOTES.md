@@ -8,7 +8,7 @@ A small, polished 2.5D co-op puzzle game that runs in the browser. It is a portf
 
 Story: a couple's small daughter wandered into a strange, kind tower and got lost. There is no villain and no combat. The tower rearranges itself like a house does when you are little, and its rooms are made of her favorite things. The couple climbs floor by floor to find her. They are tied together by one long thread the whole way.
 
-In the dark room they find her plush bunny on the railing and pick it up (one simple interaction). At the top, in her bedroom, the bunny goes back to her. The ending: the other end of the thread was in her hands all along, and when the family is together it ties itself into a bow. The bedroom uses the bunny, not a teddy. The final end card is the family portrait in refrences/.
+At the top, in her bedroom, they find her holding her plush bunny. The ending: the other end of the thread was in her hands all along, and when the family is together it ties itself into a bow. The bedroom uses the bunny, not a teddy. The final end card is the family portrait in refrences/.
 
 Tone: warm, cozy, gentle stakes. Failing a puzzle just means a soft reset. Nothing scary happens.
 
@@ -19,15 +19,15 @@ Tone: warm, cozy, gentle stakes. Failing a puzzle just means a soft reset. Nothi
 - The partner AI is simple and readable on purpose. Rules: Follow (default, keeps close, respects thread slack), Hold (stays put and acts as an anchor), Come (walks to the player when called). Walking into a partner who is not holding swaps places with them.
 - Controls: WASD or arrows to move, Space or E to call, H or Q to toggle hold. Desktop only.
 
-## The game: two rooms plus an ending
+## The game: one room, with a story intro and a rescue ending
 
-Play order: the thread room, then the dark room, then the daughter's bedroom.
+The game is now one room, the thread room, polished to the highest quality, with a story intro before it and a rescue ending after it.
 
-1. Thread room. Painted plate with posts, a central pillar and two crates. The thread wraps around the posts that act as pegs. One parent anchors while the other moves, then they swap, until the thread is unwound and both reach the door at the top right. Doubles as the tutorial.
-2. Dark room. One parent carries a lantern, the other sees in the dark. Glowing translucent platforms are only visible near the lantern and fade after a few seconds. Both must cross before the platforms vanish. The room must actually be dark, lit only by the lantern. The bunny is on the railing near the end. The daughter's door is past the last platform. This is the emotional peak.
-3. Bedroom ending. A short illustrated scene (see story above).
+1. Intro. A short story sequence that sets up the tower, the lost daughter and the thread.
+2. Thread room. Painted plate with posts, a central pillar and crates. The thread starts tangled round the posts that act as pegs and round the pillar. The parents free it and both reach the door at the top right. Doubles as the tutorial.
+3. Rescue ending. A short illustrated scene: the daughter, holding her bunny, and the thread tying itself into a bow (see story above).
 
-The music box room was cut to protect time and quality.
+The dark room and the music box room are cut for now and may be added later. The bunny pickup is dropped: the daughter simply holds the bunny in the ending.
 
 ## Art direction
 
@@ -35,7 +35,7 @@ Reference images are in the refrences folder (the spelling is a typo, leave it).
 
 - Tower cutaway: Enchanted_Clockwork_Dollhouse_Tower-1.png (for title screen and transitions).
 - Thread room plate: assets/plates/thread-room.png, the clean version with no painted rope. Enchanted_Thread_Room_Diorama-2.png is the same room with painted rope and is reference only.
-- Dark room reference: Dark_Room_Floating_Platform_Puzzle-4.png. The dark room plate will be generated later from this look.
+- Dark room reference (not in use, the dark room is cut for now): Dark_Room_Floating_Platform_Puzzle-4.png.
 - Characters: final art is in assets/characters/ as parent_man.png, parent_woman.png and daughter.png, on transparent backgrounds. Family portrait is Whimsical_Fairytale_Family_Portrait.png.
 
 Room art is painted plates (generated images) with the game drawn on top as live overlays: the thread, both characters, glow and particles. Things that move or change (thread, fading platforms, glows) are never baked into a plate. Pillar, posts, crates, large spools and railings are traced as cutout layers drawn in front of characters when they stand behind them.
@@ -54,7 +54,7 @@ Keep every swappable art file registered by name in the assets manifest so art c
 - Plain JavaScript with ES modules, no build step. Rendering approach is whatever Stage 1 established (see Progress Log).
 - The thread runs on a grid: it wraps around pegs the way string wraps around nails. No real rope physics.
 - The plate is a drawn three-quarter view and not a true isometric grid, so the grid is mapped to it with a four-point perspective calibration tool, and the result is saved.
-- Sound is synthesized with the Web Audio API. No audio files needed.
+- Sound effects are synthesized with the Web Audio API. Music is quiet public-domain classical: audio files dropped into assets/audio/ are played, and if there are none a music-box version of Bach's Prelude in C is synthesized from its notes.
 - Run locally with `python3 -m http.server` in this folder and open localhost:8000.
 - Deploy later (GitHub Pages needs a public repo on a free account, Vercel works with private). Do not deploy now.
 
@@ -72,13 +72,14 @@ Keep every swappable art file registered by name in the assets manifest so art c
 ## Stages
 
 1. Foundation. Done.
-2. Thread room plate pipeline. Put the plate in as the background, replace placeholder characters with the real art, build the perspective calibration tool, the walkable mask (main floor and the door landing only, stairs, round platform, bridge and edge props are scenery), and the cutout layers for the pillar, posts, crates, large spools and front railing. Keep live lantern glow and a light pulse. Make the characters sit in the scene: a soft contact shadow under the feet that shifts with movement, and a light tint that warms and brightens them near a lantern and cools them in shadow. Done when both parents walk smoothly, pass behind obstacles correctly, and cannot leave the floor. No thread puzzle yet.
-3. Thread wrapping puzzle on the plate. Real thread wrapping and unwinding around the posts chosen as pegs, the puzzle layout, soft reset on a key, a door that opens when both reach the exit, a transition. Replaces the stand-in thread. Done when the room is solvable and a wrong order can be reset out of.
-4. Dark room. Dark room plate, lantern light, fading glowing platforms, crossing puzzle, bunny pickup, win condition.
-5. Story and wiring. Title screen, transitions between rooms, the bedroom ending with the bunny and the thread bow, full playthrough from title to ending.
-6. Polish and deploy preparation. Character life: idle breathing, small squash and stretch when starting and stopping, and a light sway on the loose parts (her skirt and ribbon, his scarf) using one small image-warp shader, so the flat cutouts feel alive and not like paper. Then sound, small juice, bug pass, upscale art if needed. A true 3D character experiment is a stretch goal only if everything else is done.
+2. Thread room plate pipeline. Done.
+3. Thread wrapping puzzle on the plate. Done.
+3b. Thread polish and a more complex tangle. The thread lies on the floor with a shadow, wraps show on the pegs, depth ordering is right, the partner shows when it is held back, hints are easier to read, and the starting tangle uses about eight posts plus the pillar. Calm classical music replaces the hum. The two parents never stack.
+4. Story. An intro sequence and the rescue ending, replacing the "To be continued" card.
+5. Atmosphere and effects.
+6. Final bug pass and deploy preparation.
 
-If usage runs short, cut in this order: extras in Stage 6, then sound, then the title screen polish.
+If usage runs short, cut in this order: extras in Stage 5, then the intro polish.
 
 ## Progress Log
 
@@ -112,3 +113,14 @@ Update this at the end of every stage. Keep entries short: what was built, what 
   - Tested (headless Chrome, real key presses, screenshots): start, tight thread, rope behind the top and middle crates with a parent behind each, pillar and post wraps, the partner's strain and chip, the 20 second hint, then the full realistic solve and the stuck run with R again. No console errors.
   - Decisions: progress for the hint timer means the thread coming off a peg. The band across the front of the pillar is shown whenever the pillar is hooked, even when the real thread runs round the back, because that is what makes it read as wrapped.
   - Known issues: the partner tugs and speaks at the very start too, since it wants to follow and cannot. Rope lying just in front of a crate's front edge can draw over the shins of a parent standing right there. The strain lean is small. Everything in the Stage 3 list still applies (one scripted route, sounds unchecked by ear, Stage 2 shadow and tint additions not built).
+- Scope change (Nov 16): the game is now one room, the thread room, with a story intro and a rescue ending. The dark room and the music box room are cut for now. The bunny pickup is dropped. Stages renumbered as above.
+- Stage 3b, thread polish and a more complex tangle: done and pushed. (The polish items 1 to 5 are described in the entry above; this adds the rest.)
+  - Tangle: eight active posts (post_3, 4, 5, 6, 8, 10, 11, 12) plus the pillar. From the player's hand the thread passes post_5, loops fully round post_4, goes one and a half times round post_3 and the pillar together, under post_10, loops round post_8, out round post_6 and back past post_8, over post_11 and under post_12 to the partner. Thread length is 68 cells and the tangle uses 65. Set in tools/build_thread_room.py.
+  - Solver: a search over player cell and thread shape, with the partner standing still, on the same thread code the game uses (kept outside the repo, in the test scratch folder). Shortest solution: 140 steps to stand at the door with the thread free. That is about 25 seconds of pure walking, so the two to three minutes has to come from reading the tangle, which no person has timed yet. The 140-step route was then played in the browser with real key presses, with the partner held and with the partner left following, and the door opened both times.
+  - Door: it now opens only when both parents are on the landing and the thread is free of every peg. Standing there with it still caught gives a hint. The partner walks to its own free spot on the landing instead of stopping below it.
+  - Thread drawing fix: between two points on the same peg the rope stays up, so the pillar band no longer zigzags.
+  - Audio: the ambient hum is gone. Music is in src/music.js. Files in assets/audio/ (mp3, ogg, m4a, wav) are played shuffled at volume 0.25 with a 3 second fade in and a 2 second crossfade. A local server lists the folder, so any file name works there. A host that does not list folders tries the names in MUSIC in assets/manifest.js (gymnopedie-1.mp3, clair-de-lune.mp3, prelude-in-c.mp3). With no files, a music-box version of Bach's Prelude in C (bars 1 to 32, then a closing C chord in place of the last three bars) plays from its notes and loops. Music starts on the first key press or click, and M mutes everything. Sound effects are about half as loud as before, and there is a new soft pluck when the thread catches on a peg or comes free.
+  - Never stacking: Follow now stops three steps from the player. If the two end up touching (corners included) and the player has stopped, the partner steps away to the nearest free cell the thread allows. A holding partner does not move. Trading places is slower (0.3 seconds) and each parent curves out to their own side, so they pass side by side.
+  - Tested (headless Chrome, real key presses, screenshots): the 140-step solve twice as above; a stuck run (straight for the door until the thread is tight, pushing until the reset hint, winding the wrong way round post_5, then R restoring the exact start); the swap caught mid-step; the partner stepping away after the player stops beside it; music reported as running with no files after the first key press. No console errors.
+  - Not checked: nothing was listened to. The music, the note list of the prelude and the softer effects were only tested for running without errors, and file playback was not tested because the folder is empty.
+  - Known issues: the solution is long but simple (follow the thread back), and the Hold key is not needed on the shortest route. The partner tugs and says the thread is tight from the first second. On the landing the two parents stand on neighbouring cells. During a swap the thread end leaves the hand briefly.

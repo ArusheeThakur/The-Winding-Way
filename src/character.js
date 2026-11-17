@@ -41,6 +41,7 @@ export class Character {
     this.feet = { x: 0, y: 0 }; // where the feet are on the plate right now
     this.strain = 0;   // 1 to 0 while pulling against the thread
     this.strainDir = 1;
+    this.sidestep = null; // { x, y } in plate pixels: curve out by this much during the current step
 
     texture.anisotropy = 8;
     const k = height / MAN_SOURCE_HEIGHT;
@@ -127,13 +128,14 @@ export class Character {
     if (this.moving) {
       this.t = Math.min(1, this.t + dt / this.stepTime);
       const { from, to, t } = this;
+      const arc = this.sidestep ? Math.sin(Math.PI * t) : 0; // stepping round someone
       this.setPose({
-        x: from.x + (to.x - from.x) * t,
-        y: from.y + (to.y - from.y) * t,
+        x: from.x + (to.x - from.x) * t + (arc && this.sidestep.x * arc),
+        y: from.y + (to.y - from.y) * t + (arc && this.sidestep.y * arc),
         scale: from.scale + (to.scale - from.scale) * t,
       });
       this.stride += dt * 12.5;
-      if (this.t >= 1) this.moving = false;
+      if (this.t >= 1) { this.moving = false; this.sidestep = null; }
     }
 
     // Ease between standing and walking so starts and stops are soft.

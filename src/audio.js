@@ -1,13 +1,16 @@
-// All sound is synthesized with the Web Audio API. There are no audio files.
-// Audio starts on the first key press or click (browsers require that), and M mutes.
+// Sound effects are synthesized with the Web Audio API. The music is in music.js.
+// Audio starts on the first key press or click (browsers require that), and M mutes everything.
 //   footstep(volume)  soft alternating step
 //   pop()             partner mode changed
 //   creak(tension)    rope creak, 0 = silent, 1 = thread pulled tight. Call it whenever the tension changes.
 //   chime()           a door opening
+//   pluck(caught)     the thread catches on a peg (true) or comes free (false)
+import { startMusic } from './music.js';
+
 export function createAudio() {
   let ctx = null, master = null, noise = null;
   let creakGain = null, creakOsc = null;
-  let muted = false, left = false;
+  let muted = false, left = false, music = null;
 
   function start() {
     if (ctx) return;
@@ -20,7 +23,7 @@ export function createAudio() {
     const data = noise.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
 
-    startPad();
+    startMusic(ctx, master).then((m) => { music = m; });
     startCreak();
   }
 
@@ -50,19 +53,6 @@ export function createAudio() {
     f.frequency.value = freq;
     f.connect(dest);
     return f;
-  }
-
-  // Very quiet warm pad: three soft tones through a low filter, slowly swelling.
-  function startPad() {
-    const out = ctx.createGain();
-    out.gain.value = 0.022;
-    out.connect(master);
-    const filter = lowpass(480, out);
-    for (const freq of [130.81, 196.0, 262.4]) tone('triangle', freq, filter);
-    const swell = ctx.createGain();
-    swell.gain.value = 0.008;
-    swell.connect(out.gain);
-    tone('sine', 0.07, swell);
   }
 
   // The rope creak runs all the time at zero volume; creak() turns it up.
@@ -98,36 +88,43 @@ export function createAudio() {
     setMuted,
     get muted() { return muted; },
     get running() { return !!ctx && ctx.state === 'running'; },
+    get music() { return music; },
 
     footstep(volume = 1) {
       if (!ctx) return;
       left = !left;
       const src = ctx.createBufferSource();
       src.buffer = noise;
-      src.connect(lowpass(left ? 520 : 390, envelope(0.11 * volume, 0.004, 0.09)));
+      src.connect(lowpass(left ? 520 : 390, envelope(0.06 * volume, 0.004, 0.09)));
       src.start(ctx.currentTime, Math.random() * 0.3, 0.12);
     },
 
     pop() {
       if (!ctx) return;
       const t = ctx.currentTime;
-      const o = tone('sine', 560, envelope(0.14, 0.004, 0.11), t, 0.14);
+      const o = tone('sine', 560, envelope(0.07, 0.004, 0.11), t, 0.14);
       o.frequency.exponentialRampToValueAtTime(300, t + 0.1);
     },
 
     creak(tension) {
       if (!ctx) return;
       const k = Math.min(1, Math.max(0, tension));
-      creakGain.gain.setTargetAtTime(k * k * 0.09, ctx.currentTime, 0.12);
+      creakGain.gain.setTargetAtTime(k * k * 0.045, ctx.currentTime, 0.12);
       creakOsc.frequency.setTargetAtTime(50 + k * 22, ctx.currentTime, 0.12);
+    },
+
+    pluck(caught) {
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      tone('triangle', caught ? 196 : 392, lowpass(1400, envelope(caught ? 0.06 : 0.04, 0.005, 0.3)), t, 0.35);
     },
 
     chime() {
       if (!ctx) return;
       [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
         const at = ctx.currentTime + i * 0.09;
-        tone('sine', freq, envelope(0.11, 0.01, 1.5, at), at, 1.6);
-        tone('sine', freq * 2, envelope(0.025, 0.01, 0.8, at), at, 0.9);
+        tone('sine', freq, envelope(0.07, 0.01, 1.5, at), at, 1.6);
+        tone('sine', freq * 2, envelope(0.015, 0.01, 0.8, at), at, 0.9);
       });
     },
   };

@@ -79,13 +79,19 @@ POOLS = [(600, 800, 230), (1300, 410, 200), (880, 560, 330)]
 
 # ---- the thread puzzle (Stage 3) ----
 # Active pegs: indexes into POSTS, plus the pillar. Every other post is a plain obstacle.
-ACTIVE_POSTS = {'post_5': 4, 'post_10': 9, 'post_12': 11}
-THREAD_LENGTH = 32       # cells of thread, the whole budget
+ACTIVE_POSTS = {'post_3': 2, 'post_4': 3, 'post_5': 4, 'post_6': 5, 'post_8': 7, 'post_10': 9, 'post_11': 10, 'post_12': 11}
+THREAD_LENGTH = 68       # cells of thread, the whole budget (the starting tangle uses about 65)
 SPAWN_CELLS = dict(player=[16, 20], partner=[20, 13])
 # How the thread is tangled at the start: one end stays with the player while the other is
 # carried through these grid points to the partner. Stored in the layout as plate pixels.
-TANGLE = [(11.5, 21.2), (6, 14), (6.3, 10), (9, 9.6), (11.5, 11), (14.5, 11.3), (16, 13),
-          (16.5, 16.5), (18.5, 17.5), (21, 15.5), (20.5, 13.5)]
+# Order: past post_5, a full loop round post_4, one and a half times round post_3 and the pillar
+# together, under post_10, a loop round post_8, out round post_6 and back, over post_11, under post_12.
+# The shortest solution is 140 steps (found with a search over player cell and thread shape).
+TANGLE = [(12, 21.2), (11.6, 19), (9.6, 17.6), (8.4, 17.8), (7.2, 16.4), (8.4, 15.2), (9.8, 16.4), (8.6, 17.9),
+          (6.6, 16), (5.2, 12.6), (6.6, 10.4), (10.4, 10.8), (10.7, 13.4), (8, 14.3), (5.6, 14), (5.2, 12.6),
+          (6.6, 10.4), (10.4, 10.8), (10.7, 13.4), (14.2, 13.9), (15.6, 12.6), (13.2, 9.4), (13.6, 7.8),
+          (15.4, 8.4), (14, 10.4), (10.4, 8.4), (8.6, 7.6), (9.4, 6.2), (12, 6.6), (18.4, 9.8), (20, 11.2),
+          (17.2, 14.6), (18, 16.8), (19.8, 16), (20.5, 13.5)]
 DOOR = [(1327, 326), (1327, 228), (1333, 210), (1346, 198), (1360, 193), (1376, 198), (1390, 212),
         (1401, 232), (1402, 351)]
 CHARACTER_HEIGHT = 210  # the man's height in plate pixels, mid floor

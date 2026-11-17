@@ -67,7 +67,7 @@ export class ThreadView {
     const out = [{ x: line.a.x, z: line.a.z, h: heightA }];
     line.bends.forEach((bend, i) => {
       const peg = bend.peg;
-      if (!peg.r) { out.push({ x: peg.x, z: peg.z, h: peg.height, peg }); return; }
+      if (!peg.r) { out.push({ x: peg.x, z: peg.z, h: peg.height, peg, id: peg.id }); return; }
       // Go round the peg's surface, from where the thread arrives to where it leaves.
       const prev = pts[i];
       const s = Math.sign(bend.turn) || 1;
@@ -76,7 +76,7 @@ export class ThreadView {
       const steps = Math.max(2, Math.ceil(Math.abs(bend.turn) / 0.5));
       for (let k = 0; k <= steps; k++) {
         const a = start + bend.turn * k / steps;
-        out.push({ x: peg.x + Math.cos(a) * peg.r * 1.15, z: peg.z + Math.sin(a) * peg.r * 1.15, h: peg.height, peg: k === (steps >> 1) ? peg : null });
+        out.push({ x: peg.x + Math.cos(a) * peg.r * 1.15, z: peg.z + Math.sin(a) * peg.r * 1.15, h: peg.height, peg: k === (steps >> 1) ? peg : null, id: peg.id });
       }
     });
     out.push({ x: line.b.x, z: line.b.z, h: heightB });
@@ -120,14 +120,15 @@ export class ThreadView {
       const span = Math.hypot(pb.x - pa.x, pb.y - pa.y);
       const n = Math.max(1, Math.ceil(span / PIECE));
       const nx = span ? -(pb.y - pa.y) / span : 0, ny = span ? (pb.x - pa.x) / span : 0;
-      const wave = (1 - 0.75 * taut) * Math.min(10, span * 0.08);
+      const wave = a.id && a.id === b.id ? 0 : (1 - 0.75 * taut) * Math.min(10, span * 0.08);
       const sag = Math.min(12, span * 0.08);
       for (let k = i ? 1 : 0; k <= n; k++) {
         const t = k / n, d = t * span;
         const gx = a.x + (b.x - a.x) * t, gz = a.z + (b.z - a.z) * t;
         const lying = Math.max(ON_FLOOR, a.h * fall(d / DROP), b.h * fall((span - d) / DROP));
         const straight = a.h + (b.h - a.h) * t - sag * 4 * t * (1 - t);
-        const h = Math.max(ON_FLOOR, lying + (straight - lying) * taut * 0.3);
+        // between two points on the same peg (round a post, or round the pillar) the rope stays up
+        const h = a.id && a.id === b.id ? a.h : Math.max(ON_FLOOR, lying + (straight - lying) * taut * 0.3);
         // the lazy curve stays put on the floor near the end that is not being carried
         const off = wave * Math.sin(Math.PI * t) * Math.sin((i ? d : span - d) / 42 + i * 2.1);
         const p = floor.gridToPlate(gx, gz);

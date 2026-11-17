@@ -47,6 +47,9 @@ function placeParents() {
   game.partner.reset();
 }
 
+const SWAP_SIDE = 0.85; // how far each parent curves out when they trade places, in cells
+const SWAP_TIME = 0.3;  // seconds for that step
+const STEP_TIME = 0.16; // the player's usual step
 let lastMode = null; // to hear when the partner's mode changes
 
 function start(art, choice) {
@@ -55,7 +58,7 @@ function start(art, choice) {
   game.player = new Character(choice, art[choice], height);
   // The room has a say in where the partner may walk (in the thread room, the thread decides).
   game.partner = new Partner(new Character(other, art[other], height), game.player, {
-    gap: () => game.floor.partnerGap?.(),
+    target: () => game.floor.partnerTarget?.(),
     stepOk: (a, b) => game.floor.partnerStepOk?.(a, b) ?? true,
     canEnter: (x, z) => game.floor.grid.isWalkable(x, z) && (game.floor.partnerCanEnter?.(x, z) ?? true),
   });
@@ -96,10 +99,17 @@ function update(dt) {
       const canSwap = () => game.floor.swapOk?.(pc.cell, player.cell) ?? true;
       if (intoPartner && partner.mode !== MODE.HOLD && !pc.moving && canSwap()) {
         // Walking into a partner who is not anchoring: they trade places, so nobody gets boxed in.
-        pc.stepTime = player.stepTime;
+        // Each curves out to their own side and they take it a little slower, so it reads as stepping past.
+        const here = game.floor.cellToPlate(player.cell.x, player.cell.z);
+        const beside = game.floor.cellToPlate(player.cell.x + dz, player.cell.z + dx); // one cell to the side
+        const side = { x: (beside.x - here.x) * SWAP_SIDE, y: (beside.y - here.y) * SWAP_SIDE };
+        pc.stepTime = player.stepTime = SWAP_TIME;
         pc.tryStep(-dx, -dz, () => true);
         player.tryStep(dx, dz, () => true);
+        player.sidestep = side;
+        pc.sidestep = { x: -side.x, y: -side.y };
       } else {
+        player.stepTime = STEP_TIME;
         player.tryStep(dx, dz, playerCanEnter);
       }
     }
