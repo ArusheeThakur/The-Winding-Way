@@ -39,6 +39,8 @@ export class Character {
     this.from = { x: 0, y: 0, scale: 1 };
     this.to = { x: 0, y: 0, scale: 1 };
     this.feet = { x: 0, y: 0 }; // where the feet are on the plate right now
+    this.strain = 0;   // 1 to 0 while pulling against the thread
+    this.strainDir = 1;
 
     texture.anisotropy = 8;
     const k = height / MAN_SOURCE_HEIGHT;
@@ -70,7 +72,7 @@ export class Character {
   }
 
   // How high above the floor the thread is held, in plate pixels.
-  get handHeight() { return (this.height * 0.4 + this.sprite.position.y) * this.group.scale.y; }
+  get handHeight() { return (this.height * 0.3 + this.sprite.position.y) * this.group.scale.y; }
 
   // Top of the head on the plate, for labels.
   get head() {
@@ -93,6 +95,13 @@ export class Character {
     this.moving = false;
     this.t = 1;
     this.setPose(floor.cellToPlate(x, z));
+  }
+
+  // A short lean and pull toward one side (1 right, -1 left): wanting to go but held by the thread.
+  tug(dir) {
+    this.strain = 1;
+    this.strainDir = dir;
+    this.facing = dir;
   }
 
   // Start one step if the cell can be entered. canEnter(x, z) decides.
@@ -135,6 +144,11 @@ export class Character {
     s.rotation.z = (Math.sin(this.stride) * 0.045 - this.facing * 0.06) * this.walk;    // sway and lean
     s.scale.x += (this.facing - s.scale.x) * (1 - Math.exp(-dt * 22));                   // flip
     s.scale.y = 1 + Math.sin(this.clock * 2.2) * 0.008 * (1 - this.walk);                // quiet breathing
+    // straining: lean out twice against the thread, then settle back
+    this.strain = Math.max(0, this.strain - dt / 1.1);
+    const pull = Math.sin(this.strain * Math.PI) * (0.6 + 0.4 * Math.abs(Math.sin(this.strain * Math.PI * 2)));
+    s.rotation.z -= this.strainDir * 0.16 * pull;
+    s.position.x = this.strainDir * 7 * pull;
     this.shadow.scale.setScalar(1 - 0.08 * Math.abs(Math.sin(this.stride)) * this.walk);
   }
 }

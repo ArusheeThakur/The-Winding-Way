@@ -16,6 +16,7 @@ const HINT = {
   tight: 'The thread is pulled tight.',
   stuck: 'Tangled? Press R to start the room again.',
   door: 'You both need to stand at the door. Press Space to call.',
+  free: 'The thread is free. Walk to the door at the top right, then press Space to call your partner.',
   caught: 'The thread is still caught near your partner. Press H so they hold still, then walk around that post.',
 };
 
@@ -24,10 +25,14 @@ export async function create({ art }) {
   const room = createPlateRoom({ plate: art.thread_room, mask: art.thread_room_mask, glow: art.light_pool, layout });
   const spec = layout.thread;
 
-  const view = new ThreadView(art.light_pool);
+  const view = new ThreadView(art.light_pool, layout.cutouts);
   room.group.add(view.group);
-  for (const p of spec.pegs) view.addHalo(p.id, p.x, p.top, 70, 70, 0.55);
-  view.addHalo('pillar', spec.pillar.x, spec.pillar.y - spec.pillar.height, 210, 90, 0.3);
+  for (const p of spec.pegs) {
+    view.addHalo(p.id, p.x, p.top, 70, 70, 0.55, p.y + 0.9);
+    view.addWrap(p.id, p.x, p.y - p.height, 19, 6, p.y + 0.7);
+  }
+  view.addHalo('pillar', spec.pillar.x, spec.pillar.y - spec.pillar.height, 210, 90, 0.3, spec.pillar.y + 0.9);
+  view.addWrap('pillar', spec.pillar.x, spec.pillar.y - spec.pillar.height, 51, 20, spec.pillar.y + 0.7);
 
   // The door: warm light that fills the doorway when it opens.
   const flat = (extra) => new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, opacity: 0, ...extra });
@@ -48,6 +53,11 @@ export async function create({ art }) {
   let solved = false;
   let refusals = 0;      // how often the player has pulled against a tight thread
   let waiting = 0;       // seconds the player has stood at the door alone
+  let fewest = 0;        // the fewest pegs the thread has been caught on so far (progress)
+  let idle = 0;          // seconds since the last progress
+  let strain = 0;        // seconds until the partner's next tug while it is held back
+  let quiet = 0;         // seconds before the partner may speak again
+  let caughtWait = 0;    // seconds before the "press H" hint may show again
 
   // Pegs on the grid: the active posts, and the pillar as a ring of points.
   function makePegs() {
@@ -70,7 +80,8 @@ export async function create({ art }) {
     line.moveEnd('b', b);
     room.line = line;
     open = 0; solved = false; refusals = 0; waiting = 0;
-    g.ui.hint(HINT.start, 9);
+    fewest = line.bends.length; idle = 0; strain = 0; quiet = 0; caughtWait = 0;
+    g.ui.hint(HINT.start, 16);
   };
 
   // The player may take a step if the thread is long enough for it.
@@ -78,7 +89,7 @@ export async function create({ art }) {
     if (line.after('a', centre(x, z)).length() <= line.maxLength) return true;
     view.pull();
     refusals++;
-    game.ui.hint(refusals > 5 ? HINT.stuck : HINT.tight, 4);
+    game.ui.hint(refusals > 5 ? HINT.stuck : HINT.tight, refusals > 5 ? 8 : 6);
     return false;
   };
 
@@ -105,10 +116,10 @@ export async function create({ art }) {
     return next.length() <= line.maxLength;
   };
 
-  // True when the only thing still holding the thread is the peg next to the partner.
-  // and the player is close enough to do something about it.
-  const lastPegOnly = () => line.bends.length > 0 && line.bends.every((bend) => bend.peg.id === line.bends[0].peg.id)
-    && Math.abs(line.a.x - line.b.x) + Math.abs(line.a.z - line.b.z) < 7;
+  // True when the only thing still holding the thread is the peg next to the partner...
+  const onePegLeft = () => line.bends.length > 0 && line.bends.every((bend) => bend.peg.id === line.bends[0].peg.id);
+  // ...and the player is close enough to do something about it.
+  const lastPegOnly = () => onePegLeft() && Math.abs(line.a.x - line.b.x) + Math.abs(line.a.z - line.b.z) < 7;
 
   const baseUpdate = room.update;
   room.update = (dt, g) => {
@@ -121,14 +132,35 @@ export async function create({ art }) {
 
     // The rope creaks as it tightens.
     const tension = line.tension();
-    const strain = Math.max(0, (tension - 0.82) / 0.18);
-    g.audio.creak(strain * (player.moving || partner.moving ? 1 : 0.2));
+    const creak = Math.max(0, (tension - 0.82) / 0.18);
+    g.audio.creak(creak * (player.moving || partner.moving ? 1 : 0.2));
 
     // A faint ghost shows a parent who is hidden behind the pillar.
     const hide = layout.hideBehind;
     for (const c of [player, partner]) {
       c.ghost.visible = c.feet.y < hide.sortY && Math.abs(c.feet.x - hide.x) < hide.halfWidth;
       c.ghost.renderOrder = hide.sortY + 0.5;
+    }
+
+    // The partner wants to walk but the thread holds it back: a small tug and a soft word,
+    // so it never looks as if it has simply stopped working.
+    quiet -= dt;
+    if (!solved && g.partner.blockedFor > 0.5) {
+      strain -= dt;
+      if (strain <= 0) {
+        strain = 5;
+        partner.tug(Math.sign(player.feet.x - partner.feet.x) || 1);
+        view.pull();
+        if (quiet <= 0) { g.ui.say(tension > 0.9 ? 'the thread is tight' : 'the thread is caught'); quiet = 12; }
+      }
+    } else strain = 0;
+
+    // Progress is the thread coming off a peg. After a while without any, show a hint again.
+    if (line.bends.length < fewest) { fewest = line.bends.length; idle = 0; }
+    idle += dt;
+    if (!solved && idle > 20) {
+      idle = 0;
+      g.ui.hint(!line.bends.length ? HINT.free : onePegLeft() ? HINT.caught : HINT.start, 10);
     }
 
     // The door opens when both parents stand on the landing.
@@ -139,16 +171,17 @@ export async function create({ art }) {
       g.audio.chime();
       g.ui.hint('', 0);
       setTimeout(() => { if (solved) g.ui.showEndCard(); }, 2200);
-    } else if (!solved && g.partner.blockedFor > 2.5 && lastPegOnly() && !player.moving) {
+    } else if (!solved && g.partner.blockedFor > 2.5 && caughtWait <= 0 && lastPegOnly() && !player.moving) {
       // The partner wants to come but the thread will not let them.
-      g.ui.hint(HINT.caught, 6);
-      g.partner.blockedFor = -8;
+      g.ui.hint(HINT.caught, 8);
+      caughtWait = 10; idle = 0;
     } else if (!solved && atDoor(player)) {
       waiting += dt;
-      if (waiting > 2.5) { g.ui.hint(HINT.door, 4); waiting = -6; }
+      if (waiting > 2.5) { g.ui.hint(HINT.door, 6); waiting = -6; idle = 0; }
     } else if (!solved) {
       waiting = Math.min(waiting, 0);
     }
+    caughtWait -= dt;
     open += ((solved ? 1 : 0) - open) * (1 - Math.exp(-dt * 2.2));
     doorLight.material.opacity = open * 0.95;
     doorGlow.material.opacity = open * 0.9;

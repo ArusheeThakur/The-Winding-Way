@@ -139,7 +139,13 @@ def main():
 
     # cutout layers. sortY is the ground line: a character whose feet are above it is behind the layer.
     cut = []
-    add = lambda name, sort_y, points: cut.append(dict(name=name, sortY=sort_y, points=[[round(x), round(y)] for x, y in points]))
+    # front (optional): the front edge of the footprint, left to right. The thread uses it to tell
+    # which side of a wide object it is on, since one sortY line is too crude for a crate.
+    def add(name, sort_y, points, front=None):
+        layer = dict(name=name, sortY=sort_y, points=[[round(x), round(y)] for x, y in points])
+        if front:
+            layer['front'] = [[round(x), round(y)] for x, y in front]
+        cut.append(layer)
     add('pillar', PILLAR_BASE[1], PILLAR)
     for i, (bx, by, top) in enumerate(POSTS):
         add(f'post_{i + 1}', by, post_outline(bx, by, top))
@@ -147,9 +153,9 @@ def main():
         add(f'landing_post_{i + 1}', by, post_outline(bx, by, top, body=16, ball=18, base=24))
     add('landing_rail', 460, LANDING_RAIL)
     for i, (outline, foot) in enumerate(CRATES):
-        add(f'crate_{i + 1}', round(sum(p[1] for p in foot) / 4), outline)
+        add(f'crate_{i + 1}', round(sum(p[1] for p in foot) / 4), outline, foot[:3])
     for name, top, base in SPOOLS:
-        add(name, base[1], spool_outline(top, base))
+        add(name, base[1], spool_outline(top, base), ellipse_pts(*base, 180, 0, 8))
     add('lantern_post', 855, LANTERN_POST)
     for i, (bx, by, top) in enumerate(RAIL_POSTS):
         add(f'rail_post_{i + 1}', 2000, post_outline(bx, by, top, body=23, ball=23, base=30))
@@ -165,8 +171,8 @@ def main():
         thread=dict(
             maxLength=THREAD_LENGTH,
             # x, y: the peg's base on the plate. r: thickness in cells. height: where the thread sits, in pixels.
-            pegs=[dict(id=name, x=POSTS[i][0], y=POSTS[i][1], r=0.35, height=46, top=POSTS[i][2] + 20) for name, i in ACTIVE_POSTS.items()],
-            pillar=dict(x=PILLAR_BASE[0], y=PILLAR_BASE[1], radius=1.05, sides=8, height=64),
+            pegs=[dict(id=name, x=POSTS[i][0], y=POSTS[i][1], r=0.35, height=34, top=POSTS[i][2] + 20) for name, i in ACTIVE_POSTS.items()],
+            pillar=dict(x=PILLAR_BASE[0], y=PILLAR_BASE[1], radius=1.05, sides=8, height=56),
             tangle=[at(gx, gz) for gx, gz in TANGLE],
         ),
         door=dict(points=[list(p) for p in DOOR], sortY=340, glow=dict(x=1364, y=285, r=150)),

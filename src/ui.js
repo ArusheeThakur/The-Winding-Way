@@ -58,6 +58,14 @@ export function createUI() {
       label.classList.remove('hidden');
     },
 
+    // A soft word from the partner, in the same chip.
+    say(text) {
+      label.textContent = text;
+      label.classList.add('on');
+      clearTimeout(labelTimer);
+      labelTimer = setTimeout(() => label.classList.remove('on'), 2200);
+    },
+
     // The little state chip above the partner: shown when the mode changes, then it fades away.
     setPartner(mode, screen) {
       if (label.dataset.mode !== mode) {
