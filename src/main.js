@@ -120,6 +120,16 @@ function update(dt) {
 
     const head = partner.char.head;
     ui.setPartner(partner.mode, stage.toScreen(head.x, head.y));
+
+    // Bubbles sit over the heads and keep clear of the other parent and of the thread.
+    const onScreen = (c) => {
+      const top = stage.toScreen(c.head.x, c.head.y), feet = stage.toScreen(c.feet.x, c.feet.y);
+      const half = (feet.y - top.y) * 0.24;
+      return { head: top, box: { l: top.x - half, r: top.x + half, t: top.y, b: feet.y } };
+    };
+    const thread = (game.floor.threadPoints?.() ?? []).map((p) => stage.toScreen(p.x, p.y));
+    const a = stage.toScreen(0, 0), b = stage.toScreen(stage.size.w, stage.size.h);
+    ui.placeBubbles(onScreen(player), onScreen(partner.char), thread, { l: a.x, t: a.y, r: b.x, b: b.y });
   }
   scenes.update(dt, game);
 }

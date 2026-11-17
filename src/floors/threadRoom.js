@@ -10,19 +10,22 @@ import { ThreadView } from '../thread.js';
 const CUE_AFTER = 10;   // seconds without progress before the next peg is pointed out (first two moves only)
 const CUE_MOVES = 2;
 const HINT_EVERY = 20;  // seconds without progress between text hints
-const RETRY_AFTER = 30; // seconds without progress before the small "Press R" note
+const RETRY_AFTER = 30; // seconds without progress before the "Press R" bubble
 const RESERVE = 2;      // cells of thread the partner leaves spare, so it never pins the player
 const MAX_WIND = 1.6;   // the partner will not wind the thread further than this round a peg (radians)
 const centre = (x, z) => ({ x: x + 0.5, z: z + 0.5 });
 
+// Hints are short: they show in a small bubble above the player. The number is the priority:
+// when two would show at once, the higher one wins.
 const HINT = {
-  start: 'The thread is tangled round the glowing posts. Follow it from your hand and walk back around each one to free it.',
-  notFree: 'The door stays shut while the thread is still caught. Free it from every post first.',
-  tight: 'The thread is pulled tight.',
-  stuck: 'Tangled? Press R to start the room again.',
-  door: 'You both need to stand at the door. Press Space to call.',
-  free: 'The thread is free. Walk to the door at the top right, then press Space to call your partner.',
-  caught: 'The thread is still caught near your partner. Press H so they hold still, then walk around that post.',
+  start: ['Follow the thread back, round each glowing post.', 1],
+  retry: ['Stuck? Press R to try again.', 1],
+  tight: ['The thread is pulled tight.', 2],
+  stuck: ['Tangled? Press R to start again.', 2],
+  caught: ['Press H so your partner holds still, then walk round that post.', 3],
+  notFree: ['The door stays shut while the thread is caught.', 4],
+  door: ['Press Space to call your partner.', 4],
+  open: ['The door is open.', 5],
 };
 
 export async function create({ art }) {
@@ -52,6 +55,36 @@ export async function create({ art }) {
   doorGlow.renderOrder = 9000;
   room.group.add(doorLight, doorGlow);
 
+  // When the thread comes free the door calls the parents over: light on the runner, a ring of
+  // light that grows out from the door again and again, and a few sparkles drifting up.
+  const TOP = 9000;
+  const lit = (map, color) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), flat({ map, color, blending: THREE.AdditiveBlending }));
+    m.renderOrder = TOP;
+    room.group.add(m);
+    return m;
+  };
+  const runner = layout.door.runner;
+  const runnerGlow = lit(art.light_pool, '#ffd9a0');
+  runnerGlow.position.set(runner.x, -runner.y, 0);
+  runnerGlow.scale.set(runner.w, runner.h, 1);
+  const ringCanvas = document.createElement('canvas');
+  ringCanvas.width = ringCanvas.height = 128;
+  const rc = ringCanvas.getContext('2d'), grad = rc.createRadialGradient(64, 64, 30, 64, 64, 64);
+  grad.addColorStop(0, 'rgba(255,255,255,0)'); grad.addColorStop(0.7, 'rgba(255,255,255,0.9)'); grad.addColorStop(1, 'rgba(255,255,255,0)');
+  rc.fillStyle = grad; rc.fillRect(0, 0, 128, 128);
+  const ringMap = new THREE.CanvasTexture(ringCanvas);
+  const rings = [0, 0.5].map((phase) => ({ mesh: lit(ringMap, '#ffe1a6'), phase }));
+  const sparkles = Array.from({ length: 12 }, (_, i) => ({
+    mesh: lit(art.light_pool, '#fff3cf'),
+    x: layout.door.glow.x - 110 + ((i * 53) % 190), // spread across the door and the runner
+    y: layout.door.glow.y + 130 - ((i * 37) % 90),
+    speed: 14 + (i % 4) * 5, phase: i * 0.37, size: 9 + (i % 3) * 4,
+  }));
+  let beckon = 0;        // 0 nothing, 1 the door is calling
+  let wasFree = false;
+  let time = 0;
+
   let line = null;
   let game = null;
   let open = 0;          // 0 closed, 1 fully open
@@ -64,6 +97,7 @@ export async function create({ art }) {
   let fewest = 0;        // the fewest pegs the thread has been caught on so far (progress)
   let idle = 0;          // seconds since the last progress
   let hintAt = HINT_EVERY; // show a text hint when idle reaches this
+  let retryAt = RETRY_AFTER; // show the "Press R" bubble when idle reaches this
   let strain = 0;        // seconds until the partner's next tug while it is held back
   let quiet = 0;         // seconds before the partner may speak again
   let caughtWait = 0;    // seconds before the "press H" hint may show again
@@ -79,6 +113,19 @@ export async function create({ art }) {
     return pegs;
   }
 
+  const say = (name, seconds) => game.ui.hint(HINT[name][0], seconds, HINT[name][1]);
+
+  // Points along the thread on the plate, so bubbles can keep off it.
+  room.threadPoints = () => {
+    if (!line) return [];
+    const out = [], pts = line.points();
+    for (let i = 1; i < pts.length; i++) {
+      const n = Math.max(1, Math.ceil(Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z)));
+      for (let k = 0; k < n; k++) out.push(room.gridToPlate(pts[i - 1].x + (pts[i].x - pts[i - 1].x) * k / n, pts[i - 1].z + (pts[i].z - pts[i - 1].z) * k / n));
+    }
+    return out;
+  };
+
   // Start, or start again: the thread is laid out in its starting tangle.
   room.begin = (g) => {
     game = g;
@@ -88,9 +135,10 @@ export async function create({ art }) {
     for (const [x, y] of spec.tangle) line.moveEnd('b', room.plateToGrid(x, y));
     line.moveEnd('b', b);
     room.line = line;
-    open = 0; solved = false; refusals = 0; waiting = 0;
-    fewest = bendCount = tangled = Math.max(1, caughtOn()); tugBack = 0; idle = 0; hintAt = HINT_EVERY; strain = 0; quiet = 0; caughtWait = 0;
-    g.ui.hint(HINT.start, 16);
+    open = 0; solved = false; refusals = 0; waiting = 0; wasFree = false;
+    fewest = bendCount = tangled = Math.max(1, caughtOn()); tugBack = 0; idle = 0; hintAt = HINT_EVERY; retryAt = RETRY_AFTER; strain = 0; quiet = 0; caughtWait = 0;
+    g.ui.hint('', 0);
+    say('start', 16);
   };
 
   // The player may take a step if the thread is long enough for it.
@@ -105,7 +153,7 @@ export async function create({ art }) {
       partner.tug(Math.sign(partner.feet.x - game.player.feet.x) || 1);
       tugBack = 2.5;
     }
-    game.ui.hint(refusals > 5 ? HINT.stuck : HINT.tight, refusals > 5 ? 8 : 6);
+    say(refusals > 5 ? 'stuck' : 'tight', refusals > 5 ? 6 : 3.5);
     return false;
   };
 
@@ -195,17 +243,25 @@ export async function create({ art }) {
     if (now !== bendCount) { g.audio.pluck(now > bendCount); bendCount = now; }
 
     // Progress is the thread coming off a peg. After a while without any, show a hint again.
-    if (now < fewest) { fewest = now; idle = 0; hintAt = HINT_EVERY; }
+    if (now < fewest) { fewest = now; idle = 0; hintAt = HINT_EVERY; retryAt = RETRY_AFTER; }
     idle += dt;
-    if (!solved && idle > hintAt) {
+    const free = !line.bends.length;
+    if (!solved && idle > retryAt) {
+      // Stuck for a while: a small bubble about starting again.
+      retryAt += HINT_EVERY;
+      hintAt = idle + HINT_EVERY / 2;
+      if (!free) say('retry', 7);
+    } else if (!solved && idle > hintAt) {
       hintAt += HINT_EVERY;
-      g.ui.hint(!line.bends.length ? HINT.free : onePegLeft() ? HINT.caught : HINT.start, 10);
+      say(free ? 'open' : onePegLeft() ? 'caught' : 'start', 7);
     }
     // For the first two moves, point out the next peg to walk round: the one nearest the player's hand.
     const teaching = !solved && tangled - fewest < CUE_MOVES && idle > CUE_AFTER && line.bends.length;
     view.cue = teaching ? line.bends[0].peg.id : null;
-    // Stuck for a while: a small note about starting again, out of the way in the corner.
-    g.ui.retry(!solved && idle > RETRY_AFTER);
+
+    // The moment the thread comes free, the door lights up as the next goal.
+    if (free && !wasFree && !solved) { say('open', 7); g.audio.chime(); }
+    wasFree = free;
 
     // The door opens when both parents stand on the landing.
     const atDoor = (c) => !c.moving && room.isRaised(c.cell.x, c.cell.z);
@@ -217,20 +273,40 @@ export async function create({ art }) {
       setTimeout(() => { if (solved) g.onSolved?.(); }, 1800);
     } else if (!solved && g.partner.blockedFor > 2.5 && caughtWait <= 0 && lastPegOnly() && !player.moving) {
       // The partner wants to come but the thread will not let them.
-      g.ui.hint(HINT.caught, 8);
+      say('caught', 8);
       caughtWait = 10; hintAt = idle + HINT_EVERY;
     } else if (!solved && atDoor(player)) {
       waiting += dt;
-      if (waiting > 2.5) { g.ui.hint(line.bends.length ? HINT.notFree : HINT.door, 6); waiting = -6; hintAt = idle + HINT_EVERY; }
+      if (waiting > 2.5) { say(line.bends.length ? 'notFree' : 'door', 6); waiting = -6; hintAt = idle + HINT_EVERY; }
     } else if (!solved) {
       waiting = Math.min(waiting, 0);
     }
     caughtWait -= dt;
     tugBack -= dt;
     open += ((solved ? 1 : 0) - open) * (1 - Math.exp(-dt * 2.2));
-    doorLight.material.opacity = open * 0.95;
-    doorGlow.material.opacity = open * 0.9;
-    doorGlow.scale.setScalar(layout.door.glow.r * 2 * (1 + open * 2.2)); // the light spills out into the room
+    // The door calls: a gentle pulse while the thread is free. The growing rings stop once
+    // someone has reached the landing. When the puzzle is solved the light floods out as before.
+    time += dt;
+    const reached = room.isRaised(player.cell.x, player.cell.z) || room.isRaised(partner.cell.x, partner.cell.z);
+    beckon += ((free && !solved ? 1 : 0) - beckon) * (1 - Math.exp(-dt * 1.6));
+    const pulse = 0.5 + 0.5 * Math.sin(time * 2.1);
+    const glow = layout.door.glow;
+    doorLight.material.opacity = Math.max(open * 0.95, beckon * (0.5 + 0.25 * pulse));
+    doorGlow.material.opacity = Math.max(open * 0.9, beckon * (0.5 + 0.3 * pulse));
+    doorGlow.scale.setScalar(glow.r * 2 * (1 + open * 2.2 + beckon * 0.25 * pulse)); // the light spills out into the room
+    runnerGlow.material.opacity = Math.max(open * 0.6, beckon * (0.4 + 0.25 * pulse));
+    for (const ring of rings) {
+      const t = (time / 2.8 + ring.phase) % 1; // each ring grows from the door, out over the landing, and fades
+      ring.mesh.position.set(glow.x - 30 * t, -(glow.y + 60 * t), 0);
+      ring.mesh.scale.set(glow.r * (0.6 + 2.6 * t), glow.r * (0.6 + 2.6 * t) * 0.8, 1);
+      ring.mesh.material.opacity = beckon * (reached ? 0 : 1) * 0.5 * Math.sin(Math.PI * t) * (1 - t * 0.5);
+    }
+    for (const s of sparkles) {
+      const t = (time * s.speed / 90 + s.phase) % 1; // drift up, twinkle, start again
+      s.mesh.position.set(s.x + Math.sin(time * 1.3 + s.phase * 9) * 8, -(s.y - t * 90), 0);
+      s.mesh.scale.setScalar(s.size * (0.6 + 0.4 * Math.sin(time * 6 + s.phase * 20)));
+      s.mesh.material.opacity = Math.max(beckon, open) * Math.sin(Math.PI * t) * 0.9;
+    }
   };
 
   return room;

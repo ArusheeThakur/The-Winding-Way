@@ -182,7 +182,8 @@ def main():
             pillar=dict(x=PILLAR_BASE[0], y=PILLAR_BASE[1], radius=1.05, sides=8, height=56),
             tangle=[at(gx, gz) for gx, gz in TANGLE],
         ),
-        door=dict(points=[list(p) for p in DOOR], sortY=340, glow=dict(x=1364, y=285, r=150)),
+        door=dict(points=[list(p) for p in DOOR], sortY=340, glow=dict(x=1364, y=285, r=150),
+                  runner=dict(x=1305, y=392, w=330, h=150)),  # the red runner on the landing
         # a faint ghost of a parent is drawn over this cutout when they stand behind it
         hideBehind=dict(x=PILLAR_BASE[0], halfWidth=120, sortY=PILLAR_BASE[1]),
         glows=[dict(x=x, y=y, r=r) for x, y, r in GLOWS],
