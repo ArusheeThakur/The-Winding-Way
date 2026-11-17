@@ -9,7 +9,6 @@ export function createUI() {
   const hud = document.getElementById('hud');
   const label = document.getElementById('partner-label');
   const hintBox = document.getElementById('hint');
-  const endCard = document.getElementById('endcard');
   let hintTimer = 0;
   let labelTimer = 0;
 
@@ -49,9 +48,6 @@ export function createUI() {
       hintBox.classList.toggle('on', !!text);
       if (text) hintTimer = setTimeout(() => hintBox.classList.remove('on'), seconds * 1000);
     },
-
-    showEndCard() { endCard.classList.add('on'); },
-    hideEndCard() { endCard.classList.remove('on'); },
 
     showHud() {
       hud.classList.remove('hidden');

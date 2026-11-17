@@ -9,6 +9,7 @@ import { Partner, MODE } from './partner.js';
 import { create as createThreadRoom } from './floors/threadRoom.js';
 import { createDebug } from './debug.js';
 import { createAudio } from './audio.js';
+import { createStory } from './story.js';
 
 const stage = createStage(document.getElementById('game'));
 const input = createInput();
@@ -17,7 +18,7 @@ const audio = createAudio();
 const scenes = new SceneManager(stage);
 scenes.register('thread', createThreadRoom);
 
-const game = { audio, ui, art: null, stage, scenes, player: null, partner: null, floor: null, frozen: false };
+const game = { audio, ui, art: null, stage, scenes, player: null, partner: null, floor: null, frozen: false, story: null, onSolved: null };
 window.__game = game; // handy for testing in the console
 
 async function enterFloor(name) {
@@ -30,7 +31,7 @@ function resetRoom() {
   if (!game.player) return;
   placeParents();
   game.frozen = false;
-  ui.hideEndCard();
+  game.story?.close(0.8);
   game.floor.begin?.(game);
 }
 
@@ -59,6 +60,7 @@ function start(art, choice) {
   // The room has a say in where the partner may walk (in the thread room, the thread decides).
   game.partner = new Partner(new Character(other, art[other], height), game.player, {
     target: () => game.floor.partnerTarget?.(),
+    delay: () => game.floor.partnerDelay?.(),
     stepOk: (a, b) => game.floor.partnerStepOk?.(a, b) ?? true,
     canEnter: (x, z) => game.floor.grid.isWalkable(x, z) && (game.floor.partnerCanEnter?.(x, z) ?? true),
   });
@@ -138,8 +140,16 @@ async function boot() {
   const params = new URLSearchParams(location.search);
   // Calibration overlay: press the ` key, or open with ?debug
   createDebug({ game, onChange: resetRoom, open: params.has('debug') });
+
+  // The story. ?nointro goes straight to the room, ?rate=4 plays the story four times faster.
+  const story = game.story = await createStory({ rate: Number(params.get('rate')) || 1 });
+  game.onSolved = () => story.ending();
+  story.onAgain(resetRoom);
+  if (!params.has('nointro') && !params.has('debug')) await story.intro();
+
   const preset = params.get('as'); // ?as=man skips the picker
-  const choice = preset === 'man' || preset === 'woman' ? preset : await ui.chooseCharacter();
-  start(game.art, choice);
+  const picked = preset === 'man' || preset === 'woman' ? preset : ui.chooseCharacter();
+  story.close(1.6);
+  start(game.art, await picked);
 }
 boot();

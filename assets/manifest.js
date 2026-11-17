@@ -14,6 +14,16 @@ export const ART = {
   light_pool: 'assets/light_pool.svg',
 };
 
+// Story paintings, shown in the intro and the ending. Each one is optional: if the file is
+// missing, its step is skipped.
+export const STORY = {
+  bedroom: 'assets/plates/bedroom.png',     // her empty bedroom (intro, first caption)
+  tower: 'assets/plates/tower-view.png',    // the whole tower with the couple at the door
+  top_room: 'assets/plates/top-room.png',   // the attic room where she is waiting
+  reunion: 'assets/plates/Reunion.png',     // the family together (ending)
+  portrait: 'assets/plates/family-portrait.png', // the end card picture
+};
+
 // Traced data for each plate: grid calibration, cutout layers, lights, spawns.
 export const LAYOUTS = {
   thread_room: 'assets/plates/thread-room.json',

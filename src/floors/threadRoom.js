@@ -54,6 +54,8 @@ export async function create({ art }) {
   let solved = false;
   let refusals = 0;      // how often the player has pulled against a tight thread
   let waiting = 0;       // seconds the player has stood at the door alone
+  let tangled = 1;       // how many pegs the thread was caught on at the start
+  let tugBack = 0;       // seconds before the partner may tug back again
   let bendCount = 0;     // to hear the thread catch and come free
   let fewest = 0;        // the fewest pegs the thread has been caught on so far (progress)
   let idle = 0;          // seconds since the last progress
@@ -82,7 +84,7 @@ export async function create({ art }) {
     line.moveEnd('b', b);
     room.line = line;
     open = 0; solved = false; refusals = 0; waiting = 0;
-    fewest = bendCount = caughtOn(); idle = 0; strain = 0; quiet = 0; caughtWait = 0;
+    fewest = bendCount = tangled = Math.max(1, caughtOn()); tugBack = 0; idle = 0; strain = 0; quiet = 0; caughtWait = 0;
     g.ui.hint(HINT.start, 16);
   };
 
@@ -91,6 +93,13 @@ export async function create({ art }) {
     if (line.after('a', centre(x, z)).length() <= line.maxLength) return true;
     view.pull();
     refusals++;
+    // Early on the two are a little out of step: when the player pulls the thread tight,
+    // the partner gives a small tug back.
+    if (together() < 0.5 && tugBack <= 0) {
+      const partner = game.partner.char;
+      partner.tug(Math.sign(partner.feet.x - game.player.feet.x) || 1);
+      tugBack = 2.5;
+    }
     game.ui.hint(refusals > 5 ? HINT.stuck : HINT.tight, refusals > 5 ? 8 : 6);
     return false;
   };
@@ -109,6 +118,12 @@ export async function create({ art }) {
     const length = next.length();
     return length <= line.maxLength - RESERVE || length <= line.length();
   };
+  // 0 at the start, 1 once the thread is free: how well the two are moving together.
+  const together = () => 1 - Math.min(1, caughtOn() / tangled);
+  // The partner sets off after the player with a lag that shrinks to nothing as they untangle,
+  // so by the end they walk as one.
+  room.partnerDelay = () => 0.45 - 0.41 * together();
+
   // When the player is on the small door landing, the partner heads for the nearest free spot on it.
   room.partnerTarget = () => {
     const you = game.player.cell, me = game.partner.char.cell;
@@ -189,7 +204,7 @@ export async function create({ art }) {
       g.frozen = true;
       g.audio.chime();
       g.ui.hint('', 0);
-      setTimeout(() => { if (solved) g.ui.showEndCard(); }, 2200);
+      setTimeout(() => { if (solved) g.onSolved?.(); }, 1800);
     } else if (!solved && g.partner.blockedFor > 2.5 && caughtWait <= 0 && lastPegOnly() && !player.moving) {
       // The partner wants to come but the thread will not let them.
       g.ui.hint(HINT.caught, 8);
@@ -201,9 +216,11 @@ export async function create({ art }) {
       waiting = Math.min(waiting, 0);
     }
     caughtWait -= dt;
+    tugBack -= dt;
     open += ((solved ? 1 : 0) - open) * (1 - Math.exp(-dt * 2.2));
     doorLight.material.opacity = open * 0.95;
     doorGlow.material.opacity = open * 0.9;
+    doorGlow.scale.setScalar(layout.door.glow.r * 2 * (1 + open * 2.2)); // the light spills out into the room
   };
 
   return room;

@@ -32,7 +32,7 @@ export class Partner {
 
   toggleHold() {
     this.mode = this.mode === MODE.HOLD ? MODE.FOLLOW : MODE.HOLD;
-    this.wait = FOLLOW_DELAY;
+    this.wait = this.rules.delay?.() ?? FOLLOW_DELAY;
   }
 
   reset() { this.mode = MODE.FOLLOW; this.wait = 0; this.blockedFor = 0; this.crowded = 0; }
@@ -64,7 +64,7 @@ export class Partner {
     const gap = target ? 0 : GAP;
     if (!path || path.length <= gap) {        // close enough to the player, or no way there
       if (this.mode === MODE.COME && path) this.mode = MODE.FOLLOW;
-      this.wait = FOLLOW_DELAY;
+      this.wait = this.rules.delay?.() ?? FOLLOW_DELAY; // the room can make it lag, or keep it in step
       this.blockedFor = path ? 0 : this.blockedFor + dt;
       // Too close: once the player has stopped, step away to the nearest free cell.
       const close = !target && !this.leader.moving && apart(me.cell, this.leader.cell) <= 1;
